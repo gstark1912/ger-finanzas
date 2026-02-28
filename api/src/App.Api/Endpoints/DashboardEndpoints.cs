@@ -54,12 +54,37 @@ public static class DashboardEndpoints
                 })
                 .ToList();
 
+            var savingAccountMonths = await db.SavingAccountMonths
+                .Include(s => s.SavingAccount)
+                .Include(s => s.Month).ThenInclude(m => m.FxRate)
+                .Where(s => monthIds.Contains(s.MonthId))
+                .ToListAsync();
+
+            var savings = savingAccountMonths
+                .GroupBy(s => s.SavingAccount)
+                .Select(accountGroup =>
+                {
+                    var byMonth = months.Select(m =>
+                    {
+                        var rate = m.FxRate?.Rate ?? 0m;
+                        var entry = accountGroup.FirstOrDefault(s => s.MonthId == m.Id);
+                        var balance = entry == null ? 0m : entry.SavingAccount.Currency == targetCurrency
+                            ? entry.Balance
+                            : targetCurrency == Currency.ARS
+                                ? entry.Balance * rate
+                                : rate > 0 ? entry.Balance / rate : 0m;
+                        return new MonthTotal(m.Id, m.Year, m.MonthNumber, balance);
+                    }).ToList();
+                    return new AccountFixedExpenseSummary(accountGroup.Key.Id, accountGroup.Key.Name, byMonth);
+                })
+                .ToList();
+
             var monthHeaders = months
                 .OrderBy(m => m.Year).ThenBy(m => m.MonthNumber)
                 .Select(m => new MonthWithFxRateDto(m.Id, m.Year, m.MonthNumber, m.FxRate?.Rate))
                 .ToList();
 
-            return Results.Ok(new DashboardSummaryDto(monthHeaders, fixedExpenses));
+            return Results.Ok(new DashboardSummaryDto(monthHeaders, fixedExpenses, savings));
         })
         .WithTags("Dashboard");
     }
@@ -67,4 +92,4 @@ public static class DashboardEndpoints
 
 public record MonthTotal(Guid MonthId, int Year, int MonthNumber, decimal Total);
 public record AccountFixedExpenseSummary(Guid AccountId, string AccountName, List<MonthTotal> Months);
-public record DashboardSummaryDto(List<MonthWithFxRateDto> Months, List<AccountFixedExpenseSummary> FixedExpenses);
+public record DashboardSummaryDto(List<MonthWithFxRateDto> Months, List<AccountFixedExpenseSummary> FixedExpenses, List<AccountFixedExpenseSummary> Savings);

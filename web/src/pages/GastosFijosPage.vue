@@ -19,15 +19,7 @@
 
       <div v-else class="section">
         <table>
-          <thead>
-            <tr>
-              <th style="width:32px;"></th>
-              <th style="width:10%;max-width:10%;">Concepto</th>
-              <th v-for="m in months" :key="m.id" style="text-align:center;">
-                {{ formatMonth(m.year, m.monthNumber) }}
-              </th>
-            </tr>
-          </thead>
+          <MonthRateHeader :months="months" :leadingCols="2" />
           <tbody v-for="group in groupedDefinitions" :key="group.accountId">
             <tr class="group-header-row">
               <td :colspan="3 + months.length">{{ group.accountName }}</td>
@@ -143,6 +135,7 @@ import { useExpenseAccountStore } from '../stores/expenseAccount'
 import { useMonthStore } from '../stores/month'
 import Notification from '../components/Notification.vue'
 import MonthRangePicker from '../components/MonthRangePicker.vue'
+import MonthRateHeader from '../components/MonthRateHeader.vue'
 
 const store = useFixedExpenseStore()
 const accountStore = useExpenseAccountStore()

@@ -59,16 +59,36 @@
             </tr>
 
             <!-- Gastos Fijos group -->
-            <tr class="row-group">
-              <td>▼ Gastos Fijos</td>
-              <td v-for="m in summary.months" :key="m.id"></td>
-            </tr>
-            <tr v-for="account in summary.fixedExpenses" :key="account.accountId" class="row-subitem">
-              <td>{{ account.accountName }}</td>
-              <td v-for="mt in account.months" :key="mt.monthId" style="text-align:right;">
-                {{ formatTotal(mt.total) }}
+            <tr class="row-group" style="cursor:pointer;" @click="fixedExpensesOpen = !fixedExpensesOpen">
+              <td>{{ fixedExpensesOpen ? '▼' : '▶' }} Gastos Fijos</td>
+              <td v-for="m in summary.months" :key="m.id" style="text-align:right;color:#c0392b;">
+                {{ fixedExpensesTotal(m.id) !== 0 ? '-' + formatTotal(fixedExpensesTotal(m.id)) : '—' }}
               </td>
             </tr>
+            <template v-if="fixedExpensesOpen">
+              <tr v-for="account in summary.fixedExpenses" :key="account.accountId" class="row-subitem">
+                <td>{{ account.accountName }}</td>
+                <td v-for="mt in account.months" :key="mt.monthId" style="text-align:right;">
+                  {{ formatTotal(mt.total) }}
+                </td>
+              </tr>
+            </template>
+
+            <!-- Caja group -->
+            <tr class="row-group" style="cursor:pointer;" @click="cajaOpen = !cajaOpen">
+              <td>{{ cajaOpen ? '▼' : '▶' }} Caja</td>
+              <td v-for="m in summary.months" :key="m.id" style="text-align:right;">
+                {{ formatTotal(cajaTotal(m.id)) }}
+              </td>
+            </tr>
+            <template v-if="cajaOpen">
+              <tr v-for="account in summary.savings" :key="account.accountId" class="row-subitem">
+                <td>{{ account.accountName }}</td>
+                <td v-for="mt in account.months" :key="mt.monthId" style="text-align:right;">
+                  {{ formatTotal(mt.total) }}
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -86,6 +106,22 @@ const selectedCount = ref(6)
 const totalizarEn = ref('ARS')
 const loading = ref(false)
 const summary = ref(null)
+const fixedExpensesOpen = ref(true)
+const cajaOpen = ref(true)
+
+function fixedExpensesTotal(monthId) {
+  return summary.value.fixedExpenses.reduce((sum, account) => {
+    const mt = account.months.find(m => m.monthId === monthId)
+    return sum + (mt?.total ?? 0)
+  }, 0)
+}
+
+function cajaTotal(monthId) {
+  return summary.value.savings.reduce((sum, account) => {
+    const mt = account.months.find(m => m.monthId === monthId)
+    return sum + (mt?.total ?? 0)
+  }, 0)
+}
 
 async function loadData() {
   loading.value = true

@@ -15,10 +15,10 @@
           <div class="nav-card-desc">Trackeo de gastos recurrentes por banco y cash con estados de pago</div>
         </router-link>
         
-        <a href="#" class="nav-card disabled">
-          <div class="nav-card-title">💰 Tarjeta Visa</div>
+        <router-link to="/tarjetas" class="nav-card">
+          <div class="nav-card-title">💳 Tarjetas</div>
           <div class="nav-card-desc">Gestión de compras variables, cuotas y deuda pendiente futura</div>
-        </a>
+        </router-link>
         
         <router-link to="/caja-usd" class="nav-card">
           <div class="nav-card-title">💵 Caja USD</div>
