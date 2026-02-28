@@ -4,7 +4,13 @@
     <div class="container" style="max-width:1400px;">
       <div class="header" style="display:flex;justify-content:space-between;align-items:center;">
         <h1>Caja USD</h1>
-        <MonthRangePicker v-model="count" @update:modelValue="loadData" />
+        <div style="display:flex;gap:12px;">
+          <select v-model="totalizarEn" style="width:auto;">
+            <option value="USD">Totalizar en USD</option>
+            <option value="ARS">Totalizar en ARS</option>
+          </select>
+          <MonthRangePicker v-model="count" @update:modelValue="loadData" />
+        </div>
       </div>
 
       <div class="section" style="overflow-x:auto;">
@@ -57,6 +63,14 @@
               </td>
             </tr>
           </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td style="font-weight:700;">Total</td>
+              <td v-for="m in months" :key="m.id" style="text-align:right;font-weight:700;">
+                {{ fmtTotal(monthTotal(m), m) }}
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>
@@ -108,6 +122,23 @@ const balances = ref([])
 const transactions = ref([])
 
 const latestMonthId = computed(() => months.value[months.value.length - 1]?.id)
+const totalizarEn = ref('USD')
+
+function monthTotal(m) {
+  return accounts.value.reduce((sum, a) => {
+    const b = getSam(a.id, m.id)
+    return sum + (b?.balance ?? 0)
+  }, 0)
+}
+
+function fmtTotal(usdTotal, m) {
+  if (totalizarEn.value === 'ARS') {
+    const rate = m.rate ?? 0
+    const ars = usdTotal * rate
+    return ars.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
+  }
+  return fmt(usdTotal)
+}
 
 const form = ref({ show: false, isIncome: true, accountName: '', samId: null, amount: null, date: new Date().toISOString().slice(0, 10), description: '' })
 
@@ -231,5 +262,5 @@ function formatMonth(year, month) {
 .btn-tx.income:hover { background: #27ae60; color: white; }
 .btn-tx.expense { background: #fdf0f0; color: #e74c3c; }
 .btn-tx.clear { background: #f5f5f5; color: #999; margin-left: 2px; }
-.btn-tx.clear:hover { background: #e74c3c; color: white; }
+.total-row td { background: #e8f4f8; border-top: 2px solid #b8d4e0; }
 </style>
