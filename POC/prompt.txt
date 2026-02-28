@@ -1,0 +1,137 @@
+Diseñá un set de pantallas web para una app de finanzas personales bimonetaria (USD ingresos / ARS gastos en Argentina).
+
+Estilo: dashboard moderno, minimalista, profesional, fondo claro, cards con bordes suaves, tipografía legible, mucho aire, grillas tipo spreadsheet pero más lindas. 
+Componentes base: top bar con nombre de producto, selector de rango de meses, selector de año, botón “Agregar”, botón “Exportar”, buscador.
+Convenciones visuales:
+- Valores ARS con $ y separador de miles.
+- Valores USD con prefijo USD.
+- Valores negativos en rojo sutil.
+- Estados “Pagado” con check verde sutil y “Pendiente” con punto ámbar.
+- Tablas con columnas por mes (ej: últimos 12 meses) y filas por categorías.
+Generá mocks de alta fidelidad (no wireframe), como si fueran capturas de un producto real.
+
+Pantalla: “Dashboard”.
+Objetivo: ver por mes el costo mensual en ARS, el aumento de patrimonio en USD, el invertido USD y el patrimonio total USD, en un sistema bimonetario que usa un tipo de cambio mensual “valor dólar”.
+
+Layout:
+- Header: “Dashboard” + selector de rango (últimos 12/24 meses) + botón “Editar tipo de cambio” + export.
+- Card row superior (KPI):
+  1) Costo mensual ARS (mes seleccionado)
+  2) Costo mensual USD (ARS / valor_dólar del mes)
+  3) Δ Patrimonio USD (vs mes anterior)
+  4) Promedio ahorro 6m (promedio Δ patrimonio últimos 6 meses)
+- Sección principal: tabla mensual tipo spreadsheet con columnas = meses y filas:
+  - Valor dólar (editable por mes)
+  - Gastos bancarizados (grupo plegable) con subfilas: Débito fijos, Visa fijos, Amex fijos, Visa compras, Amex compras, Visa BBVA; y una fila “Total bancarizados”.
+  - Gastos efectivo (grupo plegable) “Negroni/Cash” con subfilas y “Total cash”.
+  - Fila destacada “Costo mensual ARS” (más fuerte visualmente)
+  - Fila “Δ Patrimonio USD”
+  - Fila “Invertido USD”
+  - Fila “Patrimonio Total USD”
+  - Fila “Promedio crecimiento 6m”
+Interacciones visibles:
+- Hover para ver tooltip con fórmula/origen del número.
+- Click en un mes abre panel lateral con desglose del mes (bancarizado/cash/tarjetas).
+Mostrá datos de ejemplo realistas con meses como “ago 2025 … mar 2026”.
+
+Pantalla: “Gastos fijos”.
+Objetivo: trackear gastos recurrentes por mes (banco y cash) y marcar si ya fueron pagados (equivalente a negrita en Excel).
+
+Layout:
+- Header: “Gastos fijos” + selector de mes/año + toggle “Ver solo mes actual” + botón “Marcar todo pagado” (opcional) + export.
+- Cards KPI:
+  1) Total banco (mes actual)
+  2) Total cash (mes actual)
+  3) Total general
+  4) Pendientes (cantidad y total)
+- Tabla principal por secciones (bloques):
+  - Bloque “Débito Santander” (banco) con filas: Expensas, Gas, Edesur, Osde, Psicóloga, Impuestos, Gimnasio, etc.
+  - Bloque “Cash” con filas: Alquiler, Tennis, Nafta, etc.
+  - Bloque “Tarjetas” (si aplica a fijos) con fila por tarjeta.
+Cada celda (gasto/mes) muestra:
+- Monto ARS
+- Un check pequeño si está pagado; si no, estado pendiente.
+Acción rápida:
+- Click en celda abre mini modal: monto, pagado sí/no, nota.
+Mostrá una columna “Pendiente/OK” por mes o un badge por fila (ej “2 pendientes en feb 2026”).
+
+Pantalla: “Tarjeta Visa”.
+Objetivo: registrar gastos variables por tarjeta, soportar cuotas y ver deuda pendiente futura.
+
+Layout:
+- Header: “Tarjeta Visa” + selector de rango (próximos 12 meses) + botón “Nueva compra” + export.
+- Cards KPI:
+  1) Total mes actual ARS
+  2) Total mes actual USD
+  3) Deuda pendiente ARS (cuotas futuras)
+  4) Próximo vencimiento (opcional)
+- Tabla mensual:
+  - Columnas = meses
+  - Filas = compras
+Cada compra muestra:
+- Descripción (ej: “aire acond”, “marcos pared”, “cargador”)
+- Monto de cuota por mes con etiqueta “i/N” (ej “3/6”)
+- Compras sin cuotas: “1/1”
+- Totales arriba y al final por mes.
+Panel lateral “Nueva compra”:
+- descripción, total ARS, cuotas, mes inicio, categoría opcional
+- preview: lista de meses impactados con importes.
+Acentuá visualmente “deuda pendiente” como card llamativa.
+
+Pantalla: “Caja USD”.
+Objetivo: ver y gestionar USD no invertidos por bucket (Santander, Citi, Wise, Cash), trackear movimientos y proyectar sueldo.
+
+Layout:
+- Header: “Caja USD” + toggle “Reales / Forecast / Ambos” + botón “Nuevo movimiento” + export.
+- Cards KPI:
+  1) Total USD líquido (real)
+  2) Total USD líquido (incluyendo forecast)
+  3) Ingreso proyectado próximos 3 meses
+  4) Egreso último mes
+- Tabla por buckets (secciones):
+  - Santander (total)
+    - Movimientos (fila)
+    - Gastos (fila)
+  - Citi (total)
+    - GPT (ej -USD20 mensual)
+    - Transfer
+    - Viajes
+  - Wise (total)
+    - Sueldo (forecast)
+    - Transfer
+    - InteractiveBrokers
+  - Cash (total)
+    - Casa / regalos / vacaciones (ejemplos)
+Cada celda: monto USD (positivo/negativo) y un icono pequeño que indique si es forecast.
+Incluí una mini vista “Proyección” (línea simple o barras) mostrando evolución del total USD real vs forecast.
+
+Pantalla: “Inversiones”.
+Objetivo: seguir saldos por cuenta de inversión y ver progreso vs objetivo anual (ej 10% anual).
+
+Layout:
+- Header: “Inversiones” + selector de año + input “Objetivo anual %” + selector de mes base + export.
+- Cards KPI:
+  1) Invertido total USD (mes actual)
+  2) Rendimiento YTD (estimado)
+  3) Progreso vs objetivo (ej 98%)
+  4) Δ invertido vs mes anterior
+- Tabla por cuentas:
+  - Cuenta 1 (ej “Interactive Brokers”) con fila “Saldo USD”
+  - Debajo fila “Progreso vs objetivo” con porcentajes por mes (ej 101%, 99%, 98%)
+  - Repetir por 2-3 cuentas
+- Abajo totalizador:
+  - Saldo total invertido
+  - Progreso global
+Mostrá el progreso con una barra fina o chip de % por mes.
+
+Pantalla: “Configuración”.
+Objetivo: gestionar parámetros base.
+
+Secciones:
+- Tipo de cambio: regla bimonetaria + edición masiva por mes.
+- Cuentas USD: Santander, Citi, Wise, Cash (alta/edición).
+- Tarjetas: Visa, Amex (alta/edición).
+- Categorías: gastos bancarizados, cash, conceptos USD, etc.
+- Objetivo inversiones: objetivo anual por año.
+UI: lista con edición inline + botón “Agregar”.
+

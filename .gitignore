@@ -1,0 +1,35 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+*.log
+.vs/
+.vscode/
+*.DotSettings.user
+
+# EF Core
+# Migrations/
+
+# Node
+node_modules/
+dist/
+.DS_Store
+*.local
+
+# Environment
+.env
+.env.local
+
+# Docker
+postgres_data/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~

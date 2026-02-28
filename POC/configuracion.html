@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - Finanzas Personales</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f9fa; color: #2c3e50; }
+        .nav { background: white; border-bottom: 1px solid #e0e0e0; padding: 0 24px; }
+        .nav-container { max-width: 1400px; margin: 0 auto; display: flex; gap: 0; }
+        .nav a { display: block; padding: 16px 20px; text-decoration: none; color: #7f8c8d; font-size: 14px; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .nav a:hover { color: #3498db; background: #f8f9fa; }
+        .nav a.active { color: #3498db; border-bottom-color: #3498db; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .header { margin-bottom: 32px; }
+        .header h1 { font-size: 28px; font-weight: 600; }
+        .section { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 24px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section-title { font-size: 18px; font-weight: 600; color: #2c3e50; }
+        button { padding: 8px 16px; border: 1px solid #e0e0e0; border-radius: 8px; background: #3498db; color: white; cursor: pointer; font-size: 14px; border: none; }
+        button:hover { background: #2980b9; }
+        button.secondary { background: white; color: #3498db; border: 1px solid #3498db; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { text-align: left; padding: 12px; background: #f8f9fa; font-weight: 600; border-bottom: 2px solid #e0e0e0; }
+        td { padding: 12px; border-bottom: 1px solid #f0f0f0; }
+        tr:hover { background: #f8f9fa; }
+        input[type="text"], input[type="number"] { padding: 6px 10px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 14px; width: 100%; }
+        .actions { display: flex; gap: 8px; }
+        .btn-small { padding: 4px 12px; font-size: 13px; }
+        .btn-delete { background: #e74c3c; }
+        .btn-delete:hover { background: #c0392b; }
+        .inline-edit { display: flex; gap: 8px; align-items: center; }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="gastos-fijos.html">Gastos Fijos</a>
+            <a href="tarjeta-visa.html">Tarjeta Visa</a>
+            <a href="caja-usd.html">Caja USD</a>
+            <a href="inversiones.html">Inversiones</a>
+            <a href="configuracion.html" class="active">Configuración</a>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="header">
+            <h1>Configuración</h1>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">Tipo de cambio mensual</div>
+                <button>Edición masiva</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mes</th>
+                        <th>Valor dólar (ARS)</th>
+                        <th style="width: 120px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Marzo 2026</td>
+                        <td><input type="number" value="1085"></td>
+                        <td><button class="btn-small secondary">Guardar</button></td>
+                    </tr>
+                    <tr>
+                        <td>Febrero 2026</td>
+                        <td><input type="number" value="1070"></td>
+                        <td><button class="btn-small secondary">Guardar</button></td>
+                    </tr>
+                    <tr>
+                        <td>Enero 2026</td>
+                        <td><input type="number" value="1055"></td>
+                        <td><button class="btn-small secondary">Guardar</button></td>
+                    </tr>
+                    <tr>
+                        <td>Diciembre 2025</td>
+                        <td><input type="number" value="1040"></td>
+                        <td><button class="btn-small secondary">Guardar</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">Cuentas USD</div>
+                <button>+ Agregar cuenta</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th style="width: 150px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Santander</td>
+                        <td>Banco</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Editar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Citi</td>
+                        <td>Banco</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Editar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Wise</td>
+                        <td>Digital</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Editar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Cash</td>
+                        <td>Efectivo</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Editar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">Tarjetas</div>
+                <button>+ Agregar tarjeta</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Banco</th>
+                        <th>Tipo</th>
+                        <th style="width: 150px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Visa Santander</td>
+                        <td>Santander</td>
+                        <td>Crédito</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Editar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Amex</td>
+                        <td>American Express</td>
+                        <td>Crédito</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Editar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Visa BBVA</td>
+                        <td>BBVA</td>
+                        <td>Crédito</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Editar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">Categorías de gastos</div>
+                <button>+ Agregar categoría</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th style="width: 150px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Débito fijos</td>
+                        <td>Bancarizado</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Editar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Visa fijos</td>
+                        <td>Bancarizado</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Editar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Visa compras</td>
+                        <td>Bancarizado</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Editar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Alquiler</td>
+                        <td>Cash</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Editar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Nafta</td>
+                        <td>Cash</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Editar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">Objetivo inversiones</div>
+                <button>+ Agregar año</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Año</th>
+                        <th>Objetivo anual (%)</th>
+                        <th>Mes base</th>
+                        <th style="width: 150px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>2026</td>
+                        <td><input type="number" value="10" style="width: 80px;"></td>
+                        <td>Enero 2026</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Guardar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>2025</td>
+                        <td><input type="number" value="12" style="width: 80px;"></td>
+                        <td>Enero 2025</td>
+                        <td class="actions">
+                            <button class="btn-small secondary">Guardar</button>
+                            <button class="btn-small btn-delete">Eliminar</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

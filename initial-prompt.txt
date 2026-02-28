@@ -1,0 +1,132 @@
+Act as a senior full-stack engineer. Create a new repo from scratch in the CURRENT FOLDER with a working monorepo structure, a .NET 8 backend (Minimal API) + Vue 3 frontend, and a local Docker Compose environment (API + Postgres + optional pgAdmin). No login/auth for now.
+
+GOAL (MVP 0)
+- Local-first development: `docker compose up` should bring up:
+  - Postgres DB
+  - .NET API reachable on http://localhost:5080 (or similar)
+  - Vue UI reachable on http://localhost:5173
+- The UI should open on a "Configuration" screen with tabs for future sections.
+- Implement ONLY the first configuration section: "Cuentas de gasto".
+  - CRUD for entity `ExpenseAccount` (this is a cash-like account: bank/cash/wallet where we DO track balances later).
+  - For now, ExpenseAccount is just a master data table with basic fields.
+- Provide clear README with commands.
+
+TECH STACK
+Backend:
+- .NET 8 Minimal API
+- EF Core + Npgsql provider
+- DB migrations
+- OpenAPI/Swagger enabled in Development
+Frontend:
+- Vue 3 + Vite
+- Vue Router + Pinia
+- Basic UI library: use plain CSS + minimal components OR Vuetify (pick ONE and keep it simple). Prefer plain + minimal.
+Infra:
+- Docker Compose for local
+- Use environment variables for connection strings
+- Include a `make`-like script or npm scripts for convenience (optional)
+
+REPO STRUCTURE
+/
+  docker-compose.yml
+  README.md
+  .gitignore
+  /api
+    /src/App.Api
+      App.Api.csproj
+      Program.cs
+      appsettings.json
+      appsettings.Development.json
+      /Data
+      /Models
+      /Endpoints
+    /tests (optional)
+  /web
+    package.json
+    vite.config.*
+    /src
+      main.ts
+      router.ts
+      /pages
+      /components
+      /stores
+
+DOMAIN MODEL (for now)
+Entity: ExpenseAccount
+- id: GUID (PK)
+- name: string (required, max 120)
+- type: enum ExpenseAccountType { Bank, Cash, CC }  // for now
+- currency: enum Currency (USD or ARS)
+- isActive: bool (default true)
+- createdAt: datetime utc
+- updatedAt: datetime utc
+
+DB
+- Postgres database: `expenses`
+- Schema via EF Core migrations.
+- Table: expense_accounts
+
+API REQUIREMENTS
+Base URL: /api
+Endpoints (REST):
+- GET    /api/expense-accounts            -> list (optionally filter by active)
+- GET    /api/expense-accounts/{id}       -> detail
+- POST   /api/expense-accounts            -> create
+- PUT    /api/expense-accounts/{id}       -> update (full update)
+- DELETE /api/expense-accounts/{id}       -> soft delete (set isActive=false) OR hard delete; choose soft delete.
+
+Rules:
+- Validate input (name required, currency must be "USD" or "ARS")
+- Return proper HTTP codes (200/201/400/404)
+- Use DTOs for requests/responses (don’t expose EF entities directly)
+- Enable Swagger at /swagger in dev.
+
+FRONTEND REQUIREMENTS
+Routing:
+- `/` redirects to `/configuracion`
+- `/configuracion` shows page with tabs:
+  - Tab 1: "Cuentas de gasto" (IMPLEMENT NOW)
+  - Tabs 2..N: placeholders (disabled or “Coming soon”)
+UI for "Cuentas de gasto":
+- Table listing accounts (name, type, currency, active)
+- Create button opens modal (or inline form)
+- Edit button opens modal with existing values
+- Toggle active (or delete action)
+- Basic form validation
+- Notifications on success/failure
+
+API client:
+- Centralize base URL (env var VITE_API_BASE_URL default http://localhost:5080)
+- Use fetch or axios, pick one.
+
+DOCKER COMPOSE
+- Services:
+  - postgres: official image, port 5432 exposed
+  - api: build from /api, exposes 5080 (or 5000)
+- The api container must run migrations automatically on startup (or via entrypoint script).
+- Do NOT containerize the Vue dev server for now; run it locally with npm, but document it.
+  - If you prefer containerizing web too, do it with a separate service `web` exposing 5173, but keep it dev-friendly.
+
+DEVELOPER EXPERIENCE
+- Provide scripts:
+  - From repo root: `docker compose up -d` to start db + api
+  - From /web: `npm install` then `npm run dev`
+- README with:
+  - prerequisites (Docker Desktop, Node 18+, .NET 8)
+  - how to run
+  - how to apply migrations
+  - how to access Swagger
+  - how to run basic seed (optional)
+
+CODE QUALITY
+- Keep code clean and minimal.
+- Use English comments in code.
+- Use a consistent naming convention.
+- Provide sample seed data for ExpenseAccounts (optional but helpful): Wise USD, Citi USD, Cash USD.
+
+DELIVERABLE
+Generate all files with correct contents so I can run it immediately.
+Do not ask questions; make reasonable defaults.
+
+DESIGN
+You can use examples from /POC/ folder in the root folder.
