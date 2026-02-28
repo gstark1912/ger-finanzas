@@ -3,6 +3,7 @@ using System;
 using App.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace App.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260228022731_SeedFixedExpenses")]
+    partial class SeedFixedExpenses
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -319,112 +322,6 @@ namespace App.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("fixed_expense_month_entries", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000001"),
-                            Amount = 235930m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000001"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000002"),
-                            Amount = 437000m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000004"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000003"),
-                            Amount = 49000m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000008"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000004"),
-                            Amount = 95000m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000007"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000005"),
-                            Amount = 1373000m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000006"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000006"),
-                            Amount = 92000m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000005"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000007"),
-                            Amount = 78285m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000009"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000008"),
-                            Amount = 155358.33m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000010"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000009"),
-                            Amount = 8628.35m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000011"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000010"),
-                            Amount = 0m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000012"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000011"),
-                            Amount = 0m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000013"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000012"),
-                            Amount = 0m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000014"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("55555555-0000-0000-0000-000000000013"),
-                            Amount = 0m,
-                            FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000015"),
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            PaidAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        });
                 });
 
             modelBuilder.Entity("App.Api.Models.FxRateMonth", b =>

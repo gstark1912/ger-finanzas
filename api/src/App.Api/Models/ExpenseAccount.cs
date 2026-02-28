@@ -7,6 +7,8 @@ public class ExpenseAccount
     public ExpenseAccountType Type { get; set; }
     public Currency Currency { get; set; }
     public bool IsActive { get; set; } = true;
+    public DateOnly? FechaCierre { get; set; }
+    public DateOnly? FechaVencimiento { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
@@ -30,6 +32,8 @@ public record ExpenseAccountDto(
     string Type,
     string Currency,
     bool IsActive,
+    DateOnly? FechaCierre,
+    DateOnly? FechaVencimiento,
     DateTime CreatedAt,
     DateTime UpdatedAt
 );
@@ -37,12 +41,16 @@ public record ExpenseAccountDto(
 public record CreateExpenseAccountRequest(
     string Name,
     string Type,
-    string Currency
+    string Currency,
+    DateOnly? FechaCierre,
+    DateOnly? FechaVencimiento
 );
 
 public record UpdateExpenseAccountRequest(
     string Name,
     string Type,
     string Currency,
-    bool IsActive
+    bool IsActive,
+    DateOnly? FechaCierre,
+    DateOnly? FechaVencimiento
 );

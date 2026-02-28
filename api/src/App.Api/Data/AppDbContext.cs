@@ -10,6 +10,8 @@ public class AppDbContext : DbContext
     public DbSet<ExpenseAccount> ExpenseAccounts => Set<ExpenseAccount>();
     public DbSet<Month> Months => Set<Month>();
     public DbSet<FxRateMonth> FxRateMonths => Set<FxRateMonth>();
+    public DbSet<FixedExpenseDefinition> FixedExpenseDefinitions => Set<FixedExpenseDefinition>();
+    public DbSet<FixedExpenseMonthEntry> FixedExpenseMonthEntries => Set<FixedExpenseMonthEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,14 +41,33 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Rate).HasPrecision(18, 4);
         });
 
-        // Seed months: 12/2025, 01/2026, 02/2026
-        var m1 = new Guid("22222222-0000-0000-0000-000000000001");
-        var m2 = new Guid("22222222-0000-0000-0000-000000000002");
+        modelBuilder.Entity<FixedExpenseDefinition>(entity =>
+        {
+            entity.ToTable("fixed_expense_definitions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(120);
+            entity.Property(e => e.Currency).HasConversion<string>();
+            entity.HasOne(e => e.ExpenseAccount).WithMany().HasForeignKey(e => e.ExpenseAccountId);
+        });
+
+        modelBuilder.Entity<FixedExpenseMonthEntry>(entity =>
+        {
+            entity.ToTable("fixed_expense_month_entries");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Amount).HasPrecision(18, 2);
+            entity.HasOne(e => e.Definition).WithMany().HasForeignKey(e => e.FixedExpenseDefinitionId);
+            entity.HasOne(e => e.Month).WithMany().HasForeignKey(e => e.MonthId);
+            entity.HasIndex(e => new { e.FixedExpenseDefinitionId, e.MonthId }).IsUnique();
+        });
+
+        // Seed months: 02/2026
         var m3 = new Guid("22222222-0000-0000-0000-000000000003");
         modelBuilder.Entity<Month>().HasData(
-            new Month { Id = m1, Year = 2025, MonthNumber = 12 },
-            new Month { Id = m2, Year = 2026, MonthNumber = 1 },
             new Month { Id = m3, Year = 2026, MonthNumber = 2 }
+        );
+
+        modelBuilder.Entity<FxRateMonth>().HasData(
+            new FxRateMonth { Id = new Guid("33333333-0000-0000-0000-000000000001"), MonthId = m3, BaseCurrency = "USD", QuoteCurrency = "ARS", Rate = 1450m }
         );
 
         // Seed data
@@ -57,6 +78,44 @@ public class AppDbContext : DbContext
             new ExpenseAccount { Id = new Guid("11111111-0000-0000-0000-000000000003"), Name = "Tarjeta Amex", Type = ExpenseAccountType.CC, Currency = Currency.ARS, IsActive = true, CreatedAt = now, UpdatedAt = now },
             new ExpenseAccount { Id = new Guid("11111111-0000-0000-0000-000000000004"), Name = "Santander $", Type = ExpenseAccountType.Bank, Currency = Currency.ARS, IsActive = true, CreatedAt = now, UpdatedAt = now },
             new ExpenseAccount { Id = new Guid("11111111-0000-0000-0000-000000000005"), Name = "Citi USD", Type = ExpenseAccountType.Bank, Currency = Currency.USD, IsActive = true, CreatedAt = now, UpdatedAt = now }
+        );
+        // Seed FixedExpenseDefinitions
+        var santander = new Guid("11111111-0000-0000-0000-000000000004");
+        var cash = new Guid("11111111-0000-0000-0000-000000000001");
+        var visa = new Guid("11111111-0000-0000-0000-000000000002");
+        modelBuilder.Entity<FixedExpenseDefinition>().HasData(
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000001"), Name = "Osde", ExpenseAccountId = santander, Currency = Currency.ARS, IsActive = true, ExpireDay = 20, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000002"), Name = "Arba", ExpenseAccountId = santander, Currency = Currency.ARS, IsActive = true, ExpireDay = 10, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000003"), Name = "Contador", ExpenseAccountId = santander, Currency = Currency.ARS, IsActive = true, ExpireDay = 15, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000004"), Name = "Impuestos", ExpenseAccountId = santander, Currency = Currency.ARS, IsActive = true, ExpireDay = 20, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000005"), Name = "Personal", ExpenseAccountId = santander, Currency = Currency.ARS, IsActive = true, ExpireDay = 22, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000006"), Name = "Alquiler", ExpenseAccountId = cash, Currency = Currency.ARS, IsActive = true, ExpireDay = 10, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000007"), Name = "Tennis", ExpenseAccountId = cash, Currency = Currency.ARS, IsActive = true, ExpireDay = 8, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000008"), Name = "Gimnasio", ExpenseAccountId = cash, Currency = Currency.ARS, IsActive = true, ExpireDay = 10, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000009"), Name = "Seguro Moto", ExpenseAccountId = visa, Currency = Currency.ARS, IsActive = true, ExpireDay = null, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000010"), Name = "Seguro Auto", ExpenseAccountId = visa, Currency = Currency.ARS, IsActive = true, ExpireDay = null, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000011"), Name = "Hbo", ExpenseAccountId = visa, Currency = Currency.ARS, IsActive = true, ExpireDay = null, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000012"), Name = "Youtube", ExpenseAccountId = visa, Currency = Currency.USD, IsActive = true, ExpireDay = null, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000013"), Name = "Google Drive", ExpenseAccountId = visa, Currency = Currency.USD, IsActive = true, ExpireDay = null, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000014"), Name = "Spotify", ExpenseAccountId = visa, Currency = Currency.USD, IsActive = true, ExpireDay = null, CreatedAt = now },
+            new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000015"), Name = "Netflix", ExpenseAccountId = visa, Currency = Currency.USD, IsActive = true, ExpireDay = null, CreatedAt = now }
+        );
+        // Seed FixedExpenseMonthEntries for Feb 2026
+        var paidAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+        modelBuilder.Entity<FixedExpenseMonthEntry>().HasData(
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000001"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000001"), MonthId = m3, Amount = 235930m, PaidAt = paidAt },
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000002"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000004"), MonthId = m3, Amount = 437000m, PaidAt = paidAt },
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000003"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000008"), MonthId = m3, Amount = 49000m, PaidAt = paidAt },
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000004"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000007"), MonthId = m3, Amount = 95000m, PaidAt = paidAt },
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000005"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000006"), MonthId = m3, Amount = 1373000m, PaidAt = paidAt },
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000006"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000005"), MonthId = m3, Amount = 92000m, PaidAt = paidAt },
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000007"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000009"), MonthId = m3, Amount = 78285m, PaidAt = paidAt },
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000008"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000010"), MonthId = m3, Amount = 155358.33m, PaidAt = paidAt },
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000009"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000011"), MonthId = m3, Amount = 8628.35m, PaidAt = paidAt },
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000010"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000012"), MonthId = m3, Amount = 0m, PaidAt = paidAt },
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000011"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000013"), MonthId = m3, Amount = 0m, PaidAt = paidAt },
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000012"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000014"), MonthId = m3, Amount = 0m, PaidAt = paidAt },
+            new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000013"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000015"), MonthId = m3, Amount = 0m, PaidAt = paidAt }
         );
     }
 }

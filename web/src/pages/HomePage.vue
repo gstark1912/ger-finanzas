@@ -10,10 +10,10 @@
           <div class="nav-card-desc">Vista general mensual con KPIs, costo ARS/USD, patrimonio y ahorro promedio</div>
         </a>
         
-        <a href="#" class="nav-card disabled">
+        <router-link to="/gastos-fijos" class="nav-card">
           <div class="nav-card-title">💳 Gastos Fijos</div>
           <div class="nav-card-desc">Trackeo de gastos recurrentes por banco y cash con estados de pago</div>
-        </a>
+        </router-link>
         
         <a href="#" class="nav-card disabled">
           <div class="nav-card-title">💰 Tarjeta Visa</div>

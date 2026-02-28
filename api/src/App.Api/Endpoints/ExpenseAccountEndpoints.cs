@@ -44,6 +44,8 @@ public static class ExpenseAccountEndpoints
                 Type = type,
                 Currency = currency,
                 IsActive = true,
+                FechaCierre = type == ExpenseAccountType.CC ? request.FechaCierre : null,
+                FechaVencimiento = type == ExpenseAccountType.CC ? request.FechaVencimiento : null,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -73,6 +75,8 @@ public static class ExpenseAccountEndpoints
             account.Type = type;
             account.Currency = currency;
             account.IsActive = request.IsActive;
+            account.FechaCierre = type == ExpenseAccountType.CC ? request.FechaCierre : null;
+            account.FechaVencimiento = type == ExpenseAccountType.CC ? request.FechaVencimiento : null;
             account.UpdatedAt = DateTime.UtcNow;
 
             await db.SaveChangesAsync();
@@ -95,6 +99,7 @@ public static class ExpenseAccountEndpoints
     }
 
     private static ExpenseAccountDto ToDto(ExpenseAccount account) =>
-        new(account.Id, account.Name, account.Type.ToString(), account.Currency.ToString(), 
-            account.IsActive, account.CreatedAt, account.UpdatedAt);
+        new(account.Id, account.Name, account.Type.ToString(), account.Currency.ToString(),
+            account.IsActive, account.FechaCierre, account.FechaVencimiento,
+            account.CreatedAt, account.UpdatedAt);
 }

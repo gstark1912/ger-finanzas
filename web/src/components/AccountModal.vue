@@ -25,6 +25,16 @@
             <option value="ARS">ARS</option>
           </select>
         </div>
+        <template v-if="form.type === 'CC'">
+          <div class="form-group">
+            <label>Fecha de Cierre *</label>
+            <input v-model="form.fechaCierre" type="date" :required="form.type === 'CC'" />
+          </div>
+          <div class="form-group">
+            <label>Fecha de Vencimiento *</label>
+            <input v-model="form.fechaVencimiento" type="date" :required="form.type === 'CC'" />
+          </div>
+        </template>
         <div class="form-group" v-if="account">
           <label>
             <input type="checkbox" v-model="form.isActive" />
@@ -53,7 +63,9 @@ const form = ref({
   name: '',
   type: 'Bank',
   currency: 'USD',
-  isActive: true
+  isActive: true,
+  fechaCierre: null,
+  fechaVencimiento: null
 })
 
 watch(() => props.account, (newAccount) => {
@@ -62,7 +74,9 @@ watch(() => props.account, (newAccount) => {
       name: newAccount.name,
       type: newAccount.type,
       currency: newAccount.currency,
-      isActive: newAccount.isActive
+      isActive: newAccount.isActive,
+      fechaCierre: newAccount.fechaCierre ?? null,
+      fechaVencimiento: newAccount.fechaVencimiento ?? null
     }
   }
 }, { immediate: true })
