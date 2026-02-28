@@ -6,6 +6,7 @@
       <div class="header" style="display:flex;justify-content:space-between;align-items:center;">
         <h1>Gastos Fijos</h1>
         <div style="display:flex;gap:12px;align-items:center;">
+          <MonthRangePicker v-model="count" @update:modelValue="reloadMonths" />
           <select v-model="totalizarEn" style="width:auto;">
             <option value="ARS">Totalizar en ARS</option>
             <option value="USD">Totalizar en USD</option>
@@ -141,6 +142,7 @@ import { useFixedExpenseStore } from '../stores/fixedExpense'
 import { useExpenseAccountStore } from '../stores/expenseAccount'
 import { useMonthStore } from '../stores/month'
 import Notification from '../components/Notification.vue'
+import MonthRangePicker from '../components/MonthRangePicker.vue'
 
 const store = useFixedExpenseStore()
 const accountStore = useExpenseAccountStore()
@@ -152,6 +154,7 @@ const editForm = ref({ name: '', expenseAccountId: '', currency: 'ARS', expireDa
 const notification = ref({ message: '', type: 'success' })
 const form = ref({ name: '', expenseAccountId: '', currency: 'ARS', expireDay: null })
 const totalizarEn = ref('ARS')
+const count = ref(3)
 
 function openEdit(def) {
   editingDef.value = def
@@ -170,8 +173,12 @@ async function submitEdit() {
 }
 
 onMounted(async () => {
-  await Promise.all([store.fetchAll(), accountStore.fetchAccounts(), monthStore.fetchMonths()])
+  await Promise.all([store.fetchAll(count.value), accountStore.fetchAccounts(), monthStore.fetchMonths(count.value)])
 })
+
+async function reloadMonths() {
+  await Promise.all([store.fetchAll(count.value), monthStore.fetchMonths(count.value)])
+}
 
 // months in ascending order (last 3)
 const months = computed(() =>

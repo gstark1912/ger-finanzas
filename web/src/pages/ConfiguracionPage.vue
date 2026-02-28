@@ -11,7 +11,7 @@
           Cuentas de gasto
         </button>
         <button class="tab" :class="{ active: activeTab === 'fx' }" @click="activeTab = 'fx'">Tipo de cambio</button>
-        <button class="tab" disabled>Tarjetas</button>
+        <button class="tab" :class="{ active: activeTab === 'saving' }" @click="activeTab = 'saving'">Cuentas de Ahorro</button>
         <button class="tab" disabled>Categorías</button>
         <button class="tab" disabled>Objetivos</button>
       </div>
@@ -78,7 +78,77 @@
         </table>
       </div>
 
+      <div v-if="activeTab === 'saving'" class="section">
+        <div class="section-header">
+          <div class="section-title">Cuentas de Ahorro</div>
+          <button @click="openSavingCreate">+ Agregar cuenta</button>
+        </div>
+        <div v-if="savingStore.loading">Cargando...</div>
+        <table v-else>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Moneda</th>
+              <th>Estado</th>
+              <th style="width:180px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="a in savingStore.accounts" :key="a.id">
+              <td>{{ a.name }}</td>
+              <td>{{ a.type === 'Bank' ? 'Banco' : 'Efectivo' }}</td>
+              <td>{{ a.currency }}</td>
+              <td><span :class="['badge', a.isActive ? 'active' : 'inactive']">{{ a.isActive ? 'Activa' : 'Inactiva' }}</span></td>
+              <td class="actions">
+                <button class="btn-small secondary" @click="openSavingEdit(a)">Editar</button>
+                <button class="btn-small btn-delete" @click="deleteSaving(a.id)">Eliminar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <AccountModal v-if="showModal" :account="selectedAccount" @close="closeModal" @submit="handleSubmit" />
+
+      <!-- Saving account modal -->
+      <div v-if="showSavingModal" class="modal" @click.self="showSavingModal = false">
+        <div class="modal-content">
+          <div class="modal-header">
+            <span class="modal-title">{{ editingSaving ? 'Editar' : 'Nueva' }} cuenta de ahorro</span>
+            <button class="modal-close" @click="showSavingModal = false">×</button>
+          </div>
+          <div class="form-group">
+            <label>Nombre</label>
+            <input v-model="savingForm.name" type="text" />
+          </div>
+          <div class="form-group">
+            <label>Tipo</label>
+            <select v-model="savingForm.type">
+              <option value="Bank">Banco</option>
+              <option value="Cash">Efectivo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Moneda</label>
+            <select v-model="savingForm.currency">
+              <option value="USD">USD</option>
+              <option value="ARS">ARS</option>
+            </select>
+          </div>
+          <div v-if="editingSaving" class="form-group">
+            <label>Estado</label>
+            <select v-model="savingForm.isActive">
+              <option :value="true">Activa</option>
+              <option :value="false">Inactiva</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button class="secondary" @click="showSavingModal = false">Cancelar</button>
+            <button @click="submitSaving">Guardar</button>
+          </div>
+        </div>
+      </div>
 
       <Notification :message="notification.message" :type="notification.type" />
     </div>
@@ -90,16 +160,21 @@ import { ref, onMounted, watch } from 'vue'
 import AppNav from '../components/AppNav.vue'
 import { useExpenseAccountStore } from '../stores/expenseAccount'
 import { useMonthStore } from '../stores/month'
+import { useSavingAccountStore } from '../stores/savingAccount'
 import AccountModal from '../components/AccountModal.vue'
 import Notification from '../components/Notification.vue'
 
 const store = useExpenseAccountStore()
 const monthStore = useMonthStore()
+const savingStore = useSavingAccountStore()
 const activeTab = ref('accounts')
 const showModal = ref(false)
 const selectedAccount = ref(null)
 const notification = ref({ message: '', type: 'success' })
 const fxEdits = ref({})
+const showSavingModal = ref(false)
+const editingSaving = ref(null)
+const savingForm = ref({ name: '', type: 'Bank', currency: 'USD', isActive: true })
 
 watch(() => monthStore.months, (months) => {
   months.forEach(m => { fxEdits.value[m.id] = m.rate ?? '' })
@@ -108,6 +183,7 @@ watch(() => monthStore.months, (months) => {
 onMounted(() => {
   store.fetchAccounts()
   monthStore.fetchMonths()
+  savingStore.fetchAccounts()
 })
 
 function openCreateModal() {
@@ -171,6 +247,27 @@ async function saveFxRate(monthId) {
   } catch (e) {
     showNotification(e.message, 'error')
   }
+}
+
+function openSavingCreate() { editingSaving.value = null; savingForm.value = { name: '', type: 'Bank', currency: 'USD', isActive: true }; showSavingModal.value = true }
+function openSavingEdit(a) { editingSaving.value = a; savingForm.value = { name: a.name, type: a.type, currency: a.currency, isActive: a.isActive }; showSavingModal.value = true }
+async function submitSaving() {
+  if (!savingForm.value.name) { showNotification('Nombre requerido', 'error'); return }
+  try {
+    if (editingSaving.value) {
+      await savingStore.updateAccount(editingSaving.value.id, savingForm.value)
+      showNotification('Cuenta actualizada', 'success')
+    } else {
+      await savingStore.createAccount(savingForm.value)
+      showNotification('Cuenta creada', 'success')
+    }
+    showSavingModal.value = false
+  } catch (e) { showNotification(e.message, 'error') }
+}
+async function deleteSaving(id) {
+  if (!confirm('¿Eliminar esta cuenta?')) return
+  await savingStore.deleteAccount(id)
+  showNotification('Cuenta eliminada', 'success')
 }
 
 function showNotification(message, type) {

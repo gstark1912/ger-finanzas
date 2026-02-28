@@ -3,6 +3,7 @@ using System;
 using App.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace App.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260228025948_AddSavingAccounts")]
+    partial class AddSavingAccounts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -500,10 +503,6 @@ namespace App.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -528,7 +527,6 @@ namespace App.Api.Migrations
                         {
                             Id = new Guid("66666666-0000-0000-0000-000000000001"),
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "USD",
                             IsActive = true,
                             Name = "Santander",
                             Type = "Bank",
@@ -538,7 +536,6 @@ namespace App.Api.Migrations
                         {
                             Id = new Guid("66666666-0000-0000-0000-000000000002"),
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "USD",
                             IsActive = true,
                             Name = "Citi",
                             Type = "Bank",
@@ -548,7 +545,6 @@ namespace App.Api.Migrations
                         {
                             Id = new Guid("66666666-0000-0000-0000-000000000003"),
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "USD",
                             IsActive = true,
                             Name = "Wise",
                             Type = "Bank",
@@ -558,95 +554,11 @@ namespace App.Api.Migrations
                         {
                             Id = new Guid("66666666-0000-0000-0000-000000000004"),
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Currency = "USD",
                             IsActive = true,
                             Name = "Cash",
                             Type = "Cash",
                             UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
-                });
-
-            modelBuilder.Entity("App.Api.Models.SavingAccountMonth", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Balance")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<Guid>("MonthId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("SavingAccountId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MonthId");
-
-                    b.HasIndex("SavingAccountId", "MonthId")
-                        .IsUnique();
-
-                    b.ToTable("saving_account_months", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("77777777-0000-0000-0000-000000000001"),
-                            Balance = 20547.16m,
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            SavingAccountId = new Guid("66666666-0000-0000-0000-000000000001")
-                        },
-                        new
-                        {
-                            Id = new Guid("77777777-0000-0000-0000-000000000002"),
-                            Balance = 32027.61m,
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            SavingAccountId = new Guid("66666666-0000-0000-0000-000000000002")
-                        },
-                        new
-                        {
-                            Id = new Guid("77777777-0000-0000-0000-000000000003"),
-                            Balance = 0m,
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            SavingAccountId = new Guid("66666666-0000-0000-0000-000000000003")
-                        },
-                        new
-                        {
-                            Id = new Guid("77777777-0000-0000-0000-000000000004"),
-                            Balance = 12745m,
-                            MonthId = new Guid("22222222-0000-0000-0000-000000000003"),
-                            SavingAccountId = new Guid("66666666-0000-0000-0000-000000000004")
-                        });
-                });
-
-            modelBuilder.Entity("App.Api.Models.SavingAccountMonthTransaction", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<Guid>("SavingAccountMonthId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SavingAccountMonthId");
-
-                    b.ToTable("saving_account_month_transactions", (string)null);
                 });
 
             modelBuilder.Entity("App.Api.Models.FixedExpenseDefinition", b =>
@@ -688,36 +600,6 @@ namespace App.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Month");
-                });
-
-            modelBuilder.Entity("App.Api.Models.SavingAccountMonth", b =>
-                {
-                    b.HasOne("App.Api.Models.Month", "Month")
-                        .WithMany()
-                        .HasForeignKey("MonthId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("App.Api.Models.SavingAccount", "SavingAccount")
-                        .WithMany()
-                        .HasForeignKey("SavingAccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Month");
-
-                    b.Navigation("SavingAccount");
-                });
-
-            modelBuilder.Entity("App.Api.Models.SavingAccountMonthTransaction", b =>
-                {
-                    b.HasOne("App.Api.Models.SavingAccountMonth", "SavingAccountMonth")
-                        .WithMany()
-                        .HasForeignKey("SavingAccountMonthId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("SavingAccountMonth");
                 });
 
             modelBuilder.Entity("App.Api.Models.Month", b =>

@@ -20,10 +20,10 @@
           <div class="nav-card-desc">Gestión de compras variables, cuotas y deuda pendiente futura</div>
         </a>
         
-        <a href="#" class="nav-card disabled">
+        <router-link to="/caja-usd" class="nav-card">
           <div class="nav-card-title">💵 Caja USD</div>
           <div class="nav-card-desc">Buckets de USD líquido por cuenta con movimientos reales y forecast</div>
-        </a>
+        </router-link>
         
         <a href="#" class="nav-card disabled">
           <div class="nav-card-title">📈 Inversiones</div>

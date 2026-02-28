@@ -12,6 +12,9 @@ public class AppDbContext : DbContext
     public DbSet<FxRateMonth> FxRateMonths => Set<FxRateMonth>();
     public DbSet<FixedExpenseDefinition> FixedExpenseDefinitions => Set<FixedExpenseDefinition>();
     public DbSet<FixedExpenseMonthEntry> FixedExpenseMonthEntries => Set<FixedExpenseMonthEntry>();
+    public DbSet<SavingAccount> SavingAccounts => Set<SavingAccount>();
+    public DbSet<SavingAccountMonth> SavingAccountMonths => Set<SavingAccountMonth>();
+    public DbSet<SavingAccountMonthTransaction> SavingAccountMonthTransactions => Set<SavingAccountMonthTransaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,6 +63,34 @@ public class AppDbContext : DbContext
             entity.HasIndex(e => new { e.FixedExpenseDefinitionId, e.MonthId }).IsUnique();
         });
 
+        modelBuilder.Entity<SavingAccount>(entity =>
+        {
+            entity.ToTable("saving_accounts");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(120);
+            entity.Property(e => e.Type).HasConversion<string>();
+            entity.Property(e => e.Currency).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<SavingAccountMonth>(entity =>
+        {
+            entity.ToTable("saving_account_months");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Balance).HasPrecision(18, 2);
+            entity.HasOne(e => e.SavingAccount).WithMany().HasForeignKey(e => e.SavingAccountId);
+            entity.HasOne(e => e.Month).WithMany().HasForeignKey(e => e.MonthId);
+            entity.HasIndex(e => new { e.SavingAccountId, e.MonthId }).IsUnique();
+        });
+
+        modelBuilder.Entity<SavingAccountMonthTransaction>(entity =>
+        {
+            entity.ToTable("saving_account_month_transactions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Amount).HasPrecision(18, 2);
+            entity.Property(e => e.Description).HasMaxLength(200);
+            entity.HasOne(e => e.SavingAccountMonth).WithMany().HasForeignKey(e => e.SavingAccountMonthId);
+        });
+
         // Seed months: 02/2026
         var m3 = new Guid("22222222-0000-0000-0000-000000000003");
         modelBuilder.Entity<Month>().HasData(
@@ -79,7 +110,7 @@ public class AppDbContext : DbContext
             new ExpenseAccount { Id = new Guid("11111111-0000-0000-0000-000000000004"), Name = "Santander $", Type = ExpenseAccountType.Bank, Currency = Currency.ARS, IsActive = true, CreatedAt = now, UpdatedAt = now },
             new ExpenseAccount { Id = new Guid("11111111-0000-0000-0000-000000000005"), Name = "Citi USD", Type = ExpenseAccountType.Bank, Currency = Currency.USD, IsActive = true, CreatedAt = now, UpdatedAt = now }
         );
-        // Seed FixedExpenseDefinitions
+
         var santander = new Guid("11111111-0000-0000-0000-000000000004");
         var cash = new Guid("11111111-0000-0000-0000-000000000001");
         var visa = new Guid("11111111-0000-0000-0000-000000000002");
@@ -100,7 +131,7 @@ public class AppDbContext : DbContext
             new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000014"), Name = "Spotify", ExpenseAccountId = visa, Currency = Currency.USD, IsActive = true, ExpireDay = null, CreatedAt = now },
             new FixedExpenseDefinition { Id = new Guid("44444444-0000-0000-0000-000000000015"), Name = "Netflix", ExpenseAccountId = visa, Currency = Currency.USD, IsActive = true, ExpireDay = null, CreatedAt = now }
         );
-        // Seed FixedExpenseMonthEntries for Feb 2026
+
         var paidAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
         modelBuilder.Entity<FixedExpenseMonthEntry>().HasData(
             new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000001"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000001"), MonthId = m3, Amount = 235930m, PaidAt = paidAt },
@@ -116,6 +147,20 @@ public class AppDbContext : DbContext
             new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000011"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000013"), MonthId = m3, Amount = 0m, PaidAt = paidAt },
             new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000012"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000014"), MonthId = m3, Amount = 0m, PaidAt = paidAt },
             new FixedExpenseMonthEntry { Id = new Guid("55555555-0000-0000-0000-000000000013"), FixedExpenseDefinitionId = new Guid("44444444-0000-0000-0000-000000000015"), MonthId = m3, Amount = 0m, PaidAt = paidAt }
+        );
+
+        var saNow = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        modelBuilder.Entity<SavingAccount>().HasData(
+            new SavingAccount { Id = new Guid("66666666-0000-0000-0000-000000000001"), Name = "Santander", Type = SavingAccountType.Bank, Currency = Currency.USD, IsActive = true, CreatedAt = saNow, UpdatedAt = saNow },
+            new SavingAccount { Id = new Guid("66666666-0000-0000-0000-000000000002"), Name = "Citi", Type = SavingAccountType.Bank, Currency = Currency.USD, IsActive = true, CreatedAt = saNow, UpdatedAt = saNow },
+            new SavingAccount { Id = new Guid("66666666-0000-0000-0000-000000000003"), Name = "Wise", Type = SavingAccountType.Bank, Currency = Currency.USD, IsActive = true, CreatedAt = saNow, UpdatedAt = saNow },
+            new SavingAccount { Id = new Guid("66666666-0000-0000-0000-000000000004"), Name = "Cash", Type = SavingAccountType.Cash, Currency = Currency.USD, IsActive = true, CreatedAt = saNow, UpdatedAt = saNow }
+        );
+        modelBuilder.Entity<SavingAccountMonth>().HasData(
+            new SavingAccountMonth { Id = new Guid("77777777-0000-0000-0000-000000000001"), SavingAccountId = new Guid("66666666-0000-0000-0000-000000000001"), MonthId = m3, Balance = 20547.16m },
+            new SavingAccountMonth { Id = new Guid("77777777-0000-0000-0000-000000000002"), SavingAccountId = new Guid("66666666-0000-0000-0000-000000000002"), MonthId = m3, Balance = 32027.61m },
+            new SavingAccountMonth { Id = new Guid("77777777-0000-0000-0000-000000000003"), SavingAccountId = new Guid("66666666-0000-0000-0000-000000000003"), MonthId = m3, Balance = 0m },
+            new SavingAccountMonth { Id = new Guid("77777777-0000-0000-0000-000000000004"), SavingAccountId = new Guid("66666666-0000-0000-0000-000000000004"), MonthId = m3, Balance = 12745m }
         );
     }
 }

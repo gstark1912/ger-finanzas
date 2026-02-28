@@ -34,6 +34,7 @@ app.MapExpenseAccountEndpoints();
 app.MapMonthEndpoints();
 app.MapFixedExpenseEndpoints();
 app.MapDashboardEndpoints();
+app.MapSavingAccountEndpoints();
 
 // Run migrations on startup
 using (var scope = app.Services.CreateScope())

@@ -3,6 +3,7 @@ using System;
 using App.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace App.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260228031704_AddSavingAccountMonths")]
+    partial class AddSavingAccountMonths
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -622,33 +625,6 @@ namespace App.Api.Migrations
                         });
                 });
 
-            modelBuilder.Entity("App.Api.Models.SavingAccountMonthTransaction", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<Guid>("SavingAccountMonthId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SavingAccountMonthId");
-
-                    b.ToTable("saving_account_month_transactions", (string)null);
-                });
-
             modelBuilder.Entity("App.Api.Models.FixedExpenseDefinition", b =>
                 {
                     b.HasOne("App.Api.Models.ExpenseAccount", "ExpenseAccount")
@@ -707,17 +683,6 @@ namespace App.Api.Migrations
                     b.Navigation("Month");
 
                     b.Navigation("SavingAccount");
-                });
-
-            modelBuilder.Entity("App.Api.Models.SavingAccountMonthTransaction", b =>
-                {
-                    b.HasOne("App.Api.Models.SavingAccountMonth", "SavingAccountMonth")
-                        .WithMany()
-                        .HasForeignKey("SavingAccountMonthId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("SavingAccountMonth");
                 });
 
             modelBuilder.Entity("App.Api.Models.Month", b =>
