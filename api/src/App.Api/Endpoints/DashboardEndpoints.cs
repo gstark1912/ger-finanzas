@@ -54,6 +54,47 @@ public static class DashboardEndpoints
                 })
                 .ToList();
 
+            var ccAccounts = await db.ExpenseAccounts
+                .Where(a => a.Type == ExpenseAccountType.CC && a.IsActive)
+                .ToListAsync();
+
+            var cardExpenseMonths = await db.CardExpenseMonths
+                .Where(e => ccAccounts.Select(a => a.Id).Contains(e.CardInstallment.ExpenseAccountId)
+                    && months.Select(m => m.Year * 100 + m.MonthNumber).Contains(e.Year * 100 + e.Month))
+                .Include(e => e.CardInstallment)
+                .ToListAsync();
+
+            var cardBalanceMonths = await db.CardBalanceMonths
+                .Where(b => ccAccounts.Select(a => a.Id).Contains(b.ExpenseAccountId)
+                    && months.Select(m => m.Year * 100 + m.MonthNumber).Contains(b.Year * 100 + b.Month))
+                .ToListAsync();
+
+            var variableExpenses = ccAccounts.Select(account =>
+            {
+                var byMonth = months.Select(m =>
+                {
+                    var rate = m.FxRate?.Rate ?? 0m;
+                    var installmentsTotal = cardExpenseMonths
+                        .Where(e => e.CardInstallment.ExpenseAccountId == account.Id && e.Month == m.MonthNumber && e.Year == m.Year)
+                        .Sum(e =>
+                        {
+                            if (e.Currency == targetCurrency) return e.Total;
+                            if (targetCurrency == Currency.ARS) return e.Total * rate;
+                            return rate > 0 ? e.Total / rate : 0m;
+                        });
+                    var balance = cardBalanceMonths.FirstOrDefault(b => b.ExpenseAccountId == account.Id && b.Month == m.MonthNumber && b.Year == m.Year);
+                    decimal balanceTotal = 0m;
+                    if (balance != null)
+                    {
+                        balanceTotal = targetCurrency == Currency.ARS
+                            ? balance.OtherExpensesArs + balance.OtherExpensesUsd * rate
+                            : (rate > 0 ? balance.OtherExpensesArs / rate : 0m) + balance.OtherExpensesUsd;
+                    }
+                    return new MonthTotal(m.Id, m.Year, m.MonthNumber, installmentsTotal + balanceTotal, balance != null && !balance.Paid);
+                }).ToList();
+                return new AccountFixedExpenseSummary(account.Id, account.Name, byMonth);
+            }).ToList();
+
             var savingAccountMonths = await db.SavingAccountMonths
                 .Include(s => s.SavingAccount)
                 .Include(s => s.Month).ThenInclude(m => m.FxRate)
@@ -79,17 +120,37 @@ public static class DashboardEndpoints
                 })
                 .ToList();
 
+            var now = DateTime.UtcNow;
+            var currentMonth = months.FirstOrDefault(m => m.Year == now.Year && m.MonthNumber == now.Month)
+                ?? months.OrderByDescending(m => m.Year).ThenByDescending(m => m.MonthNumber).First();
+            var currentRate = currentMonth.FxRate?.Rate ?? 0m;
+
+            decimal SumForMonth(IEnumerable<AccountFixedExpenseSummary> groups, Currency toCurrency)
+            {
+                return groups.Sum(acc =>
+                {
+                    var mt = acc.Months.FirstOrDefault(x => x.MonthId == currentMonth.Id);
+                    if (mt == null) return 0m;
+                    if (targetCurrency == toCurrency) return mt.Total;
+                    if (toCurrency == Currency.ARS) return mt.Total * currentRate;
+                    return currentRate > 0 ? mt.Total / currentRate : 0m;
+                });
+            }
+
+            var kpiArs = SumForMonth(fixedExpenses, Currency.ARS) + SumForMonth(variableExpenses, Currency.ARS);
+            var kpiUsd = SumForMonth(fixedExpenses, Currency.USD) + SumForMonth(variableExpenses, Currency.USD);
+
             var monthHeaders = months
                 .OrderBy(m => m.Year).ThenBy(m => m.MonthNumber)
                 .Select(m => new MonthWithFxRateDto(m.Id, m.Year, m.MonthNumber, m.FxRate?.Rate))
                 .ToList();
 
-            return Results.Ok(new DashboardSummaryDto(monthHeaders, fixedExpenses, savings));
+            return Results.Ok(new DashboardSummaryDto(monthHeaders, fixedExpenses, savings, variableExpenses, kpiArs, kpiUsd));
         })
         .WithTags("Dashboard");
     }
 }
 
-public record MonthTotal(Guid MonthId, int Year, int MonthNumber, decimal Total);
+public record MonthTotal(Guid MonthId, int Year, int MonthNumber, decimal Total, bool Unpaid = false);
 public record AccountFixedExpenseSummary(Guid AccountId, string AccountName, List<MonthTotal> Months);
-public record DashboardSummaryDto(List<MonthWithFxRateDto> Months, List<AccountFixedExpenseSummary> FixedExpenses, List<AccountFixedExpenseSummary> Savings);
+public record DashboardSummaryDto(List<MonthWithFxRateDto> Months, List<AccountFixedExpenseSummary> FixedExpenses, List<AccountFixedExpenseSummary> Savings, List<AccountFixedExpenseSummary> VariableExpenses, decimal KpiCostoMensualArs, decimal KpiCostoMensualUsd);
