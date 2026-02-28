@@ -20,7 +20,7 @@
         <button class="tab" :class="{ active: activeTab === 'accounts' }" @click="activeTab = 'accounts'">
           Cuentas de gasto
         </button>
-        <button class="tab" disabled>Tipo de cambio</button>
+        <button class="tab" :class="{ active: activeTab === 'fx' }" @click="activeTab = 'fx'">Tipo de cambio</button>
         <button class="tab" disabled>Tarjetas</button>
         <button class="tab" disabled>Categorías</button>
         <button class="tab" disabled>Objetivos</button>
@@ -63,6 +63,31 @@
         </table>
       </div>
 
+      <div v-if="activeTab === 'fx'" class="section">
+        <div class="section-header">
+          <div class="section-title">Tipo de cambio USD/ARS</div>
+        </div>
+        <div v-if="monthStore.loading">Cargando...</div>
+        <table v-else>
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th>ARS por 1 USD</th>
+              <th style="width: 120px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="month in monthStore.months" :key="month.id">
+              <td>{{ formatMonth(month.year, month.monthNumber) }}</td>
+              <td><input type="number" v-model="fxEdits[month.id]" style="width: 120px;" /></td>
+              <td>
+                <button class="btn-small secondary" @click="saveFxRate(month.id)">Guardar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <AccountModal v-if="showModal" :account="selectedAccount" @close="closeModal" @submit="handleSubmit" />
 
       <Notification :message="notification.message" :type="notification.type" />
@@ -71,19 +96,27 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useExpenseAccountStore } from '../stores/expenseAccount'
+import { useMonthStore } from '../stores/month'
 import AccountModal from '../components/AccountModal.vue'
 import Notification from '../components/Notification.vue'
 
 const store = useExpenseAccountStore()
+const monthStore = useMonthStore()
 const activeTab = ref('accounts')
 const showModal = ref(false)
 const selectedAccount = ref(null)
 const notification = ref({ message: '', type: 'success' })
+const fxEdits = ref({})
+
+watch(() => monthStore.months, (months) => {
+  months.forEach(m => { fxEdits.value[m.id] = m.rate ?? '' })
+}, { immediate: true })
 
 onMounted(() => {
   store.fetchAccounts()
+  monthStore.fetchMonths()
 })
 
 function openCreateModal() {
@@ -134,6 +167,19 @@ function formatType(type) {
     CC: 'Tarjeta de Crédito'
   }
   return types[type] || type
+}
+
+function formatMonth(year, month) {
+  return new Date(year, month - 1).toLocaleString('es-AR', { month: 'long', year: 'numeric' })
+}
+
+async function saveFxRate(monthId) {
+  try {
+    await monthStore.updateFxRate(monthId, fxEdits.value[monthId])
+    showNotification('Tipo de cambio actualizado', 'success')
+  } catch (e) {
+    showNotification(e.message, 'error')
+  }
 }
 
 function showNotification(message, type) {
