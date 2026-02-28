@@ -8,12 +8,12 @@ export const useFixedExpenseStore = defineStore('fixedExpense', () => {
   const entries = ref([])
   const loading = ref(false)
 
-  async function fetchAll() {
+  async function fetchAll(count = 3) {
     loading.value = true
     try {
       const [defsRes, entriesRes] = await Promise.all([
         fetch(`${API}/api/fixed-expense-definitions`),
-        fetch(`${API}/api/fixed-expense-entries`)
+        fetch(`${API}/api/fixed-expense-entries?count=${count}`)
       ])
       definitions.value = await defsRes.json()
       entries.value = await entriesRes.json()

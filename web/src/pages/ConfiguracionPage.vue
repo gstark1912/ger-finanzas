@@ -1,16 +1,6 @@
 <template>
   <div>
-    <nav class="nav">
-      <div class="nav-container">
-        <router-link to="/" class="nav-link">Inicio</router-link>
-        <a href="#" class="nav-link">Dashboard</a>
-        <router-link to="/gastos-fijos" class="nav-link">Gastos Fijos</router-link>
-        <a href="#" class="nav-link">Tarjeta Visa</a>
-        <a href="#" class="nav-link">Caja USD</a>
-        <a href="#" class="nav-link">Inversiones</a>
-        <router-link to="/configuracion" class="nav-link active">Configuración</router-link>
-      </div>
-    </nav>
+    <AppNav />
     <div class="container">
       <div class="header">
         <h1>Configuración</h1>
@@ -97,6 +87,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import AppNav from '../components/AppNav.vue'
 import { useExpenseAccountStore } from '../stores/expenseAccount'
 import { useMonthStore } from '../stores/month'
 import AccountModal from '../components/AccountModal.vue'

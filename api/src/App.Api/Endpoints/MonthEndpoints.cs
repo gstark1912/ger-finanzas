@@ -11,7 +11,7 @@ public static class MonthEndpoints
         var group = app.MapGroup("/api/months").WithTags("Months");
 
         // GET last N months with their fx rate
-        group.MapGet("/", async (AppDbContext db, int count = 3) =>
+        group.MapGet("/", async (AppDbContext db, int count = 6) =>
         {
             var months = await db.Months
                 .Include(m => m.FxRate)

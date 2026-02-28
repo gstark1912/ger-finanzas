@@ -5,10 +5,10 @@
       <p class="subtitle">Sistema bimonetario USD/ARS - Navegación de pantallas</p>
       
       <div class="nav-grid">
-        <a href="#" class="nav-card disabled">
+        <router-link to="/dashboard" class="nav-card">
           <div class="nav-card-title">📊 Dashboard</div>
           <div class="nav-card-desc">Vista general mensual con KPIs, costo ARS/USD, patrimonio y ahorro promedio</div>
-        </a>
+        </router-link>
         
         <router-link to="/gastos-fijos" class="nav-card">
           <div class="nav-card-title">💳 Gastos Fijos</div>

@@ -83,12 +83,12 @@ public static class FixedExpenseEndpoints
             return Results.Ok(ToDto(def));
         });
 
-        // GET entries for last 3 months (used to build the grid)
-        entries.MapGet("/", async (AppDbContext db) =>
+        // GET entries for last N months (used to build the grid)
+        entries.MapGet("/", async (AppDbContext db, int count = 3) =>
         {
             var monthIds = await db.Months
                 .OrderByDescending(m => m.Year).ThenByDescending(m => m.MonthNumber)
-                .Take(3).Select(m => m.Id).ToListAsync();
+                .Take(count).Select(m => m.Id).ToListAsync();
 
             var items = await db.FixedExpenseMonthEntries
                 .Where(e => monthIds.Contains(e.MonthId))

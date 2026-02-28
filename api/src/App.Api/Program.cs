@@ -33,6 +33,7 @@ app.UseCors();
 app.MapExpenseAccountEndpoints();
 app.MapMonthEndpoints();
 app.MapFixedExpenseEndpoints();
+app.MapDashboardEndpoints();
 
 // Run migrations on startup
 using (var scope = app.Services.CreateScope())

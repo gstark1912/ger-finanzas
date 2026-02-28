@@ -1,17 +1,17 @@
 <template>
   <div>
-    <nav class="nav">
-      <div class="nav-container">
-        <router-link to="/" class="nav-link">Inicio</router-link>
-        <router-link to="/gastos-fijos" class="nav-link active">Gastos Fijos</router-link>
-        <router-link to="/configuracion" class="nav-link">Configuración</router-link>
-      </div>
-    </nav>
+    <AppNav />
 
     <div class="container">
       <div class="header" style="display:flex;justify-content:space-between;align-items:center;">
         <h1>Gastos Fijos</h1>
-        <button @click="showForm = true">+ Nueva definición</button>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <select v-model="totalizarEn" style="width:auto;">
+            <option value="ARS">Totalizar en ARS</option>
+            <option value="USD">Totalizar en USD</option>
+          </select>
+          <button @click="showForm = true">+ Nueva definición</button>
+        </div>
       </div>
 
       <div v-if="store.loading">Cargando...</div>
@@ -30,6 +30,13 @@
           <tbody v-for="group in groupedDefinitions" :key="group.accountId">
             <tr class="group-header-row">
               <td :colspan="3 + months.length">{{ group.accountName }}</td>
+            </tr>
+            <tr class="group-total-row">
+              <td></td>
+              <td style="font-weight:600;color:#555;">Total</td>
+              <td v-for="m in months" :key="m.id" style="text-align:center;font-weight:600;">
+                {{ formatTotal(accountTotal(group, m.id), totalizarEn) }}
+              </td>
             </tr>
             <tr v-for="def in group.definitions" :key="def.id">
               <td>
@@ -129,6 +136,7 @@
 
 <script setup>
 import { ref, computed, onMounted, defineComponent, h, nextTick } from 'vue'
+import AppNav from '../components/AppNav.vue'
 import { useFixedExpenseStore } from '../stores/fixedExpense'
 import { useExpenseAccountStore } from '../stores/expenseAccount'
 import { useMonthStore } from '../stores/month'
@@ -143,6 +151,7 @@ const editingDef = ref(null)
 const editForm = ref({ name: '', expenseAccountId: '', currency: 'ARS', expireDay: null })
 const notification = ref({ message: '', type: 'success' })
 const form = ref({ name: '', expenseAccountId: '', currency: 'ARS', expireDay: null })
+const totalizarEn = ref('ARS')
 
 function openEdit(def) {
   editingDef.value = def
@@ -185,6 +194,24 @@ const groupedDefinitions = computed(() => {
 
 function getEntry(defId, monthId) {
   return store.entries.find(e => e.fixedExpenseDefinitionId === defId && e.monthId === monthId) ?? null
+}
+
+function accountTotal(group, monthId) {
+  const month = monthStore.months.find(m => m.id === monthId)
+  return group.definitions.reduce((sum, def) => {
+    const entry = getEntry(def.id, monthId)
+    if (!entry) return sum
+    if (def.currency === totalizarEn.value) return sum + entry.amount
+    if (totalizarEn.value === 'ARS') return sum + entry.amount * (month?.rate ?? 0)
+    return sum + entry.amount / (month?.rate ?? 1)
+  }, 0)
+}
+
+function formatTotal(n, currency) {
+  if (n === 0) return '—'
+  return currency === 'USD'
+    ? 'U$S ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
 }
 
 function formatMonth(year, month) {
@@ -315,6 +342,13 @@ const CellEditor = defineComponent({
 </script>
 
 <style scoped>
+.group-total-row td {
+  background: #f0f4f8;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-top: 1px solid #dde3ea;
+}
+
 .group-header-row td {
   background: #ecf0f1;
   font-weight: 600;

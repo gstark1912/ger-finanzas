@@ -7,10 +7,10 @@ export const useMonthStore = defineStore('month', () => {
   const months = ref([])
   const loading = ref(false)
 
-  async function fetchMonths() {
+  async function fetchMonths(count = 6) {
     loading.value = true
     try {
-      const res = await fetch(`${API_BASE_URL}/api/months`)
+      const res = await fetch(`${API_BASE_URL}/api/months?count=${count}`)
       if (!res.ok) throw new Error('Failed to fetch months')
       months.value = await res.json()
     } finally {
