@@ -26,36 +26,81 @@
                 {{ inst.description }} ({{ inst.installments }}c)
                 <button class="btn-icon" style="margin-left:6px;font-size:12px;opacity:0.5;" @click="deleteInstallment(inst.id)">🗑</button>
               </td>
-              <td v-for="m in inst.months" :key="m.year+'-'+m.month" style="text-align:center;">
+              <td v-for="m in inst.months" :key="m.year+'-'+m.month" style="text-align:center;" :style="isCurrentMonth(m.year, m.month) ? 'background:#f0f4f8;' : ''">
                 <template v-if="m.total !== 0">
                   <span :style="m.paid ? 'color:#27ae60;font-weight:500;' : 'color:#555;'">
                     {{ formatTotal(m.total) }}
                   </span>
-                  <button v-if="m.cemId && isRealMonth(m.year, m.month)" class="btn-small" :class="m.paid ? 'secondary' : ''"
-                    style="margin-left:6px;font-size:11px;"
-                    @click="togglePaid(m.cemId, !m.paid)">
-                    {{ m.paid ? '↩' : '✓' }}
-                  </button>
+                  <span v-if="inst.installments > 1 && m.installmentNumber != null" style="color:#aaa;font-size:11px;margin-left:4px;">
+                    {{ m.installmentNumber }}/{{ inst.installments }}
+                  </span>
                 </template>
                 <span v-else style="color:#ccc;">—</span>
               </td>
             </tr>
+            <!-- Otros gastos ARS row -->
+            <tr class="row-subitem">
+              <td style="padding-left:16px;color:#888;">Otros gastos ARS</td>
+              <td v-for="mh in summary.monthHeaders" :key="mh.year+'-'+mh.month" style="text-align:center;color:#888;" :style="isCurrentMonth(mh.year, mh.month) ? 'background:#f0f4f8;' : ''">
+                {{ getBalance(group, mh)?.otherExpensesArs ? getBalance(group, mh).otherExpensesArs.toLocaleString('es-AR', { style:'currency', currency:'ARS', maximumFractionDigits:0 }) : '—' }}
+              </td>
+            </tr>
+            <!-- Otros gastos USD row -->
+            <tr class="row-subitem">
+              <td style="padding-left:16px;color:#888;">Otros gastos USD</td>
+              <td v-for="mh in summary.monthHeaders" :key="mh.year+'-'+mh.month" style="text-align:center;color:#888;" :style="isCurrentMonth(mh.year, mh.month) ? 'background:#f0f4f8;' : ''">
+                {{ getBalance(group, mh)?.otherExpensesUsd ? 'U$S ' + getBalance(group, mh).otherExpensesUsd.toLocaleString('es-AR', { minimumFractionDigits:2, maximumFractionDigits:2 }) : '—' }}
+              </td>
+            </tr>
             <tr class="group-total-row">
               <td style="font-weight:600;">Total {{ group.accountName }}</td>
-              <td v-for="mh in summary.monthHeaders" :key="mh.year+'-'+mh.month" style="text-align:center;font-weight:600;">
-                {{ formatTotal(groupTotal(group, mh.year, mh.month)) }}
+              <td v-for="mh in summary.monthHeaders" :key="mh.year+'-'+mh.month" style="text-align:center;font-weight:600;" :style="isCurrentMonth(mh.year, mh.month) ? 'background:#e8edf2;' : ''">
+                <span :style="getBalance(group, mh)?.paid ? 'color:#27ae60;' : ''">{{ formatTotal(groupTotal(group, mh.year, mh.month)) }}</span>
+                <template v-if="isRealMonth(mh.year, mh.month) && groupTotal(group, mh.year, mh.month) !== 0">
+                  <button class="btn-small" :class="getBalance(group, mh)?.paid ? 'secondary' : ''"
+                    style="margin-left:6px;font-size:11px;"
+                    @click="openBalanceModal(group, mh)">
+                    {{ getBalance(group, mh)?.paid ? '✓ Pagada' : 'Pagar' }}
+                  </button>
+                </template>
               </td>
             </tr>
           </tbody>
           <tfoot>
             <tr class="grand-total-row">
               <td style="font-weight:700;">Total</td>
-              <td v-for="mh in summary.monthHeaders" :key="mh.year+'-'+mh.month" style="text-align:center;font-weight:700;">
+              <td v-for="mh in summary.monthHeaders" :key="mh.year+'-'+mh.month" style="text-align:center;font-weight:700;" :style="isCurrentMonth(mh.year, mh.month) ? 'background:#1a252f;' : ''">
                 {{ formatTotal(grandTotal(mh.year, mh.month)) }}
               </td>
             </tr>
           </tfoot>
         </table>
+      </div>
+    </div>
+
+    <!-- CardBalanceMonth modal -->
+    <div v-if="balanceModal.show" class="modal" @click.self="balanceModal.show = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span class="modal-title">Resumen {{ balanceModal.accountName }} — {{ formatMonth(balanceModal.year, balanceModal.month) }}</span>
+          <button class="modal-close" @click="balanceModal.show = false">×</button>
+        </div>
+        <div class="form-group">
+          <label>Otros gastos ARS</label>
+          <input v-model.number="balanceModal.otherExpensesArs" type="number" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Otros gastos USD</label>
+          <input v-model.number="balanceModal.otherExpensesUsd" type="number" min="0" />
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" v-model="balanceModal.paid" id="cbPaid" />
+          <label for="cbPaid" style="margin:0;">Tarjeta pagada</label>
+        </div>
+        <div class="form-actions">
+          <button class="secondary" @click="balanceModal.show = false">Cancelar</button>
+          <button @click="saveBalance">Guardar</button>
+        </div>
       </div>
     </div>
 
@@ -159,24 +204,57 @@ async function deleteInstallment(id) {
   await loadData()
 }
 
+const balanceModal = ref({ show: false, accountId: null, accountName: '', year: 0, month: 0, otherExpensesArs: 0, otherExpensesUsd: 0, paid: false })
+
+function getBalance(group, mh) {
+  return group.balances?.find(b => b.year === mh.year && b.month === mh.month)
+}
+
+function openBalanceModal(group, mh) {
+  const b = getBalance(group, mh)
+  balanceModal.value = {
+    show: true,
+    accountId: group.accountId,
+    accountName: group.accountName,
+    year: mh.year,
+    month: mh.month,
+    otherExpensesArs: b?.otherExpensesArs ?? 0,
+    otherExpensesUsd: b?.otherExpensesUsd ?? 0,
+    paid: b?.paid ?? false
+  }
+}
+
+async function saveBalance() {
+  const { accountId, year, month, otherExpensesArs, otherExpensesUsd, paid } = balanceModal.value
+  await fetch(`${API}/api/card-balance-months/${accountId}/${year}/${month}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ otherExpensesArs, otherExpensesUsd, paid })
+  })
+  balanceModal.value.show = false
+  await loadData()
+}
+
 function groupTotal(group, year, month) {
-  return group.installments.reduce((sum, inst) => {
+  const installmentsTotal = group.installments.reduce((sum, inst) => {
     const m = inst.months.find(m => m.year === year && m.month === month)
     return sum + (m?.total ?? 0)
   }, 0)
+  const b = group.balances?.find(b => b.year === year && b.month === month)
+  return installmentsTotal + (b?.otherTotal ?? 0)
 }
 
 function grandTotal(year, month) {
   return summary.value.groups.reduce((sum, group) => sum + groupTotal(group, year, month), 0)
 }
 
-function isRealMonth(year, month) {
-  return summary.value?.monthHeaders.find(h => h.year === year && h.month === month)?.isReal ?? false
+function isCurrentMonth(year, month) {
+  const now = new Date()
+  return year === now.getFullYear() && month === now.getMonth() + 1
 }
 
-async function togglePaid(cemId, paid) {
-  await fetch(`${API}/api/card-expense-months/${cemId}/paid?paid=${paid}`, { method: 'PATCH' })
-  await loadData()
+function isRealMonth(year, month) {
+  return summary.value?.monthHeaders.find(h => h.year === year && h.month === month)?.isReal ?? false
 }
 
 async function submitForm() {

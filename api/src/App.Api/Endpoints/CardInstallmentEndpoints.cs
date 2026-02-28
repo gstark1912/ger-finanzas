@@ -54,6 +54,10 @@ public static class CardInstallmentEndpoints
                 .Where(c => c.Active)
                 .ToListAsync();
 
+            var balances = await db.CardBalanceMonths
+                .Where(b => ccAccounts.Select(a => a.Id).Contains(b.ExpenseAccountId))
+                .ToListAsync();
+
             var monthHeaders = allMonths.Select(m => new { m.Year, m.Month, m.Rate, m.IsReal }).ToList();
 
             var groups = ccAccounts.Select(account =>
@@ -74,12 +78,20 @@ public static class CardInstallmentEndpoints
                                 mh.Month,
                                 Total = cem != null ? Convert(cem.Total, cem.Currency, mh.Rate) : 0m,
                                 cem?.Paid,
-                                CemId = cem?.Id
+                                CemId = cem?.Id,
+                                InstallmentNumber = cem?.Installment
                             };
                         }).ToList()
                     }).ToList();
 
-                return new { AccountId = account.Id, AccountName = account.Name, Installments = accountInstallments };
+                var accountBalances = allMonths.Select(mh =>
+                {
+                    var b = balances.FirstOrDefault(x => x.ExpenseAccountId == account.Id && x.Year == mh.Year && x.Month == mh.Month);
+                    var otherTotal = b != null ? Convert(b.OtherExpensesArs, Currency.ARS, mh.Rate) + Convert(b.OtherExpensesUsd, Currency.USD, mh.Rate) : 0m;
+                    return new { mh.Year, mh.Month, OtherTotal = otherTotal, b?.Paid, BalanceId = b?.Id, b?.OtherExpensesArs, b?.OtherExpensesUsd };
+                }).ToList();
+
+                return new { AccountId = account.Id, AccountName = account.Name, AccountCurrency = account.Currency.ToString(), Installments = accountInstallments, Balances = accountBalances };
             }).ToList();
 
             return Results.Ok(new { MonthHeaders = monthHeaders, Groups = groups });
@@ -131,6 +143,45 @@ public static class CardInstallmentEndpoints
             await db.SaveChangesAsync();
 
             return Results.Created($"/api/card-installments/{installment.Id}", installment.Id);
+        })
+        .WithTags("Cards");
+
+        // PUT upsert CardBalanceMonth
+        app.MapPut("/api/card-balance-months/{expenseAccountId}/{year}/{month}", async (AppDbContext db, Guid expenseAccountId, int year, int month, UpsertCardBalanceMonthRequest req) =>
+        {
+            var existing = await db.CardBalanceMonths
+                .FirstOrDefaultAsync(b => b.ExpenseAccountId == expenseAccountId && b.Year == year && b.Month == month);
+            if (existing == null)
+            {
+                db.CardBalanceMonths.Add(new CardBalanceMonth
+                {
+                    Id = Guid.NewGuid(),
+                    ExpenseAccountId = expenseAccountId,
+                    Month = month,
+                    Year = year,
+                    OtherExpensesArs = req.OtherExpensesArs,
+                    OtherExpensesUsd = req.OtherExpensesUsd,
+                    Paid = req.Paid
+                });
+            }
+            else
+            {
+                existing.OtherExpensesArs = req.OtherExpensesArs;
+                existing.OtherExpensesUsd = req.OtherExpensesUsd;
+                existing.Paid = req.Paid;
+            }
+            await db.SaveChangesAsync();
+
+            // Sync CardExpenseMonths paid status for this account+month
+            var cems = await db.CardInstallments
+                .Where(c => c.ExpenseAccountId == expenseAccountId && c.Active)
+                .SelectMany(c => c.CardExpenseMonths)
+                .Where(e => e.Year == year && e.Month == month)
+                .ToListAsync();
+            foreach (var cem in cems) cem.Paid = req.Paid;
+            await db.SaveChangesAsync();
+
+            return Results.NoContent();
         })
         .WithTags("Cards");
 

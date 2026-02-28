@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<SavingAccountMonthTransaction> SavingAccountMonthTransactions => Set<SavingAccountMonthTransaction>();
     public DbSet<CardInstallment> CardInstallments => Set<CardInstallment>();
     public DbSet<CardExpenseMonth> CardExpenseMonths => Set<CardExpenseMonth>();
+    public DbSet<CardBalanceMonth> CardBalanceMonths => Set<CardBalanceMonth>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -110,6 +111,16 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Total).HasPrecision(18, 2);
             entity.Property(e => e.Currency).HasConversion<string>();
             entity.HasOne(e => e.CardInstallment).WithMany(c => c.CardExpenseMonths).HasForeignKey(e => e.CardInstallmentId);
+        });
+
+        modelBuilder.Entity<CardBalanceMonth>(entity =>
+        {
+            entity.ToTable("card_balance_months");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OtherExpensesArs).HasPrecision(18, 2);
+            entity.Property(e => e.OtherExpensesUsd).HasPrecision(18, 2);
+            entity.HasOne(e => e.ExpenseAccount).WithMany().HasForeignKey(e => e.ExpenseAccountId);
+            entity.HasIndex(e => new { e.ExpenseAccountId, e.Month, e.Year }).IsUnique();
         });
 
         // Seed months: 02/2026

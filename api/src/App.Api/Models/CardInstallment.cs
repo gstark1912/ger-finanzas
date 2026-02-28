@@ -55,3 +55,18 @@ public record CardInstallmentDto(
 );
 
 public record CardExpenseMonthDto(Guid Id, Guid CardInstallmentId, decimal Total, string Currency, int Installment, int Month, int Year, bool Paid);
+
+public class CardBalanceMonth
+{
+    public Guid Id { get; set; }
+    public Guid ExpenseAccountId { get; set; }
+    public ExpenseAccount ExpenseAccount { get; set; } = null!;
+    public int Month { get; set; }
+    public int Year { get; set; }
+    public decimal OtherExpensesArs { get; set; } = 0;
+    public decimal OtherExpensesUsd { get; set; } = 0;
+    public bool Paid { get; set; } = false;
+}
+
+public record UpsertCardBalanceMonthRequest(decimal OtherExpensesArs, decimal OtherExpensesUsd, bool Paid);
+public record CardBalanceMonthDto(Guid Id, Guid ExpenseAccountId, int Month, int Year, decimal OtherExpensesArs, decimal OtherExpensesUsd, bool Paid);

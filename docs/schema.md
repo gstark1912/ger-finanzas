@@ -1,6 +1,3 @@
-# Database Schema
-
-```mermaid
 erDiagram
     expense_accounts {
         uuid id PK
@@ -69,6 +66,40 @@ erDiagram
         varchar description
     }
 
+    card_installments {
+        uuid id PK
+        uuid expense_account_id FK
+        varchar description
+        decimal total
+        varchar currency
+        int payments
+        int installments
+        boolean active
+        date date
+        int starting_month
+    }
+
+    card_expense_months {
+        uuid id PK
+        uuid card_installment_id FK
+        decimal total
+        varchar currency
+        int installment
+        int month
+        int year
+        boolean paid
+    }
+
+    card_balance_months {
+        uuid id PK
+        uuid expense_account_id FK
+        int month
+        int year
+        decimal other_expenses_ars
+        decimal other_expenses_usd
+        boolean paid
+    }
+
     months ||--|| fx_rate_months : "has one"
     expense_accounts ||--o{ fixed_expense_definitions : "has many"
     fixed_expense_definitions ||--o{ fixed_expense_month_entries : "has many"
@@ -76,4 +107,6 @@ erDiagram
     saving_accounts ||--o{ saving_account_months : "has many"
     months ||--o{ saving_account_months : "has many"
     saving_account_months ||--o{ saving_account_month_transactions : "has many"
-```
+    expense_accounts ||--o{ card_installments : "has many"
+    card_installments ||--o{ card_expense_months : "has many"
+    expense_accounts ||--o{ card_balance_months : "has many"
