@@ -3,7 +3,7 @@
     <AppNav />
     <div class="container" style="max-width:1400px;">
       <div class="header" style="display:flex;justify-content:space-between;align-items:center;">
-        <h1>Caja USD</h1>
+        <h1>Caja</h1>
         <div style="display:flex;gap:12px;">
           <select v-model="totalizarEn" style="width:auto;">
             <option value="USD">Totalizar en USD</option>

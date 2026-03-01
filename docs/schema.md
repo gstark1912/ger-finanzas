@@ -39,7 +39,7 @@ erDiagram
         uuid expense_account_id FK
         varchar currency
         boolean is_active
-        int expire_day
+        int? expire_day
         timestamp created_at
     }
 
@@ -100,6 +100,15 @@ erDiagram
         boolean paid
     }
 
+    variable_expenses {
+        uuid id PK
+        uuid expense_account_id FK
+        decimal total
+        varchar currency
+        int month
+        int year
+    }
+
     months ||--|| fx_rate_months : "has one"
     expense_accounts ||--o{ fixed_expense_definitions : "has many"
     fixed_expense_definitions ||--o{ fixed_expense_month_entries : "has many"
@@ -110,3 +119,4 @@ erDiagram
     expense_accounts ||--o{ card_installments : "has many"
     card_installments ||--o{ card_expense_months : "has many"
     expense_accounts ||--o{ card_balance_months : "has many"
+    expense_accounts ||--o{ variable_expenses : "has many"

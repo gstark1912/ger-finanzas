@@ -36,6 +36,7 @@ app.MapFixedExpenseEndpoints();
 app.MapDashboardEndpoints();
 app.MapSavingAccountEndpoints();
 app.MapCardInstallmentEndpoints();
+app.MapVariableExpenseEndpoints();
 
 // Run migrations on startup
 using (var scope = app.Services.CreateScope())

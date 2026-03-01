@@ -1,18 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomePage from './pages/HomePage.vue'
 import ConfiguracionPage from './pages/ConfiguracionPage.vue'
 import GastosFijosPage from './pages/GastosFijosPage.vue'
+import GastosVariablesPage from './pages/GastosVariablesPage.vue'
 import DashboardPage from './pages/DashboardPage.vue'
 import CajaUsdPage from './pages/CajaUsdPage.vue'
 
 import TarjetasPage from './pages/TarjetasPage.vue'
 
 const routes = [
-  { path: '/', component: HomePage },
+  { path: '/', component: DashboardPage },
   { path: '/dashboard', component: DashboardPage },
-  { path: '/caja-usd', component: CajaUsdPage },
+  { path: '/caja', component: CajaUsdPage },
   { path: '/configuracion', component: ConfiguracionPage },
   { path: '/gastos-fijos', component: GastosFijosPage },
+  { path: '/gastos-variables', component: GastosVariablesPage },
   { path: '/tarjetas', component: TarjetasPage }
 ]
 

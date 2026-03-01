@@ -69,6 +69,18 @@ public static class DashboardEndpoints
                     && months.Select(m => m.Year * 100 + m.MonthNumber).Contains(b.Year * 100 + b.Month))
                 .ToListAsync();
 
+            var nonCcAccounts = await db.ExpenseAccounts
+                .Where(a => a.Type != ExpenseAccountType.CC && a.IsActive)
+                .ToListAsync();
+
+            var nonCcAccountIds = nonCcAccounts.Select(a => a.Id).ToList();
+            var monthKeys = months.Select(m => m.Year * 100 + m.MonthNumber).ToList();
+
+            var nonCcVariableExpenses = await db.VariableExpenses
+                .Where(v => nonCcAccountIds.Contains(v.ExpenseAccountId)
+                    && monthKeys.Contains(v.Year * 100 + v.Month))
+                .ToListAsync();
+
             var variableExpenses = ccAccounts.Select(account =>
             {
                 var byMonth = months.Select(m =>
@@ -93,7 +105,22 @@ public static class DashboardEndpoints
                     return new MonthTotal(m.Id, m.Year, m.MonthNumber, installmentsTotal + balanceTotal, balance != null && !balance.Paid);
                 }).ToList();
                 return new AccountFixedExpenseSummary(account.Id, account.Name, byMonth);
-            }).ToList();
+            })
+            .Concat(nonCcAccounts.Select(account =>
+            {
+                var byMonth = months.Select(m =>
+                {
+                    var rate = m.FxRate?.Rate ?? 0m;
+                    var ve = nonCcVariableExpenses.FirstOrDefault(v => v.ExpenseAccountId == account.Id && v.Month == m.MonthNumber && v.Year == m.Year);
+                    if (ve == null) return new MonthTotal(m.Id, m.Year, m.MonthNumber, 0m);
+                    decimal total = ve.Currency == targetCurrency ? ve.Total
+                        : targetCurrency == Currency.ARS ? ve.Total * rate
+                        : rate > 0 ? ve.Total / rate : 0m;
+                    return new MonthTotal(m.Id, m.Year, m.MonthNumber, total);
+                }).ToList();
+                return new AccountFixedExpenseSummary(account.Id, account.Name, byMonth);
+            }))
+            .ToList();
 
             var savingAccountMonths = await db.SavingAccountMonths
                 .Include(s => s.SavingAccount)
