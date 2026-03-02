@@ -121,7 +121,7 @@ public static class CardInstallmentEndpoints
             };
 
             var installmentAmount = Math.Round(req.Total / installment.Installments, 2);
-            var startDate = DateTime.UtcNow.AddMonths(req.StartingMonth);
+            var startDate = new DateTime(req.Date.Year, req.Date.Month, 1).AddMonths(req.StartingMonth);
 
             for (int i = 0; i < installment.Installments; i++)
             {
