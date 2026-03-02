@@ -90,6 +90,17 @@
               </tr>
             </template>
 
+            <!-- Total gastos -->
+            <tr class="row-total-gastos">
+              <td>Total gastos</td>
+              <td v-for="m in summary.months" :key="m.id" :class="{ 'current-month': isCurrentMonth(m) }" style="text-align:right;">
+                {{ (fixedExpensesTotal(m.id) + variableExpensesTotal(m.id)) !== 0 ? (hideNumbers ? '****' : '-' + formatTotal(fixedExpensesTotal(m.id) + variableExpensesTotal(m.id))) : '—' }}
+              </td>
+            </tr>
+
+            <!-- Spacer -->
+            <tr class="row-spacer"><td colspan="999"></td></tr>
+
             <!-- Caja group -->
             <tr class="row-group" style="cursor:pointer;" @click="cajaOpen = !cajaOpen">
               <td>{{ cajaOpen ? '▼' : '▶' }} Caja</td>
@@ -126,7 +137,7 @@
             <tr class="row-patrimonio" style="font-weight:700;font-size:14px;">
               <td>Patrimonio total</td>
               <td v-for="m in summary.months" :key="m.id" :class="{ 'current-month': isCurrentMonth(m) }" style="text-align:right;">
-                {{ hideNumbers ? '****' : formatTotal(cajaTotal(m.id) + inversionesTotal(m.id) - fixedExpensesTotal(m.id) - variableExpensesTotal(m.id)) }}
+                {{ hideNumbers ? '****' : formatTotal(cajaTotal(m.id) + inversionesTotal(m.id)) }}
               </td>
             </tr>
           </tbody>
@@ -251,6 +262,17 @@ function formatTotal(n) {
 }
 th.current-month, td.current-month {
   background: #dde3ea !important;
+}
+.row-total-gastos td {
+  background: #922b21;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+}
+.row-spacer td {
+  background: transparent;
+  height: 20px;
+  padding: 0;
 }
 .row-patrimonio td {
   background: #2c3e50;
