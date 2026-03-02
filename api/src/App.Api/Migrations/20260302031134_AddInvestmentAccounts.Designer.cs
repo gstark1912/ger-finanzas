@@ -3,6 +3,7 @@ using System;
 using App.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace App.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260302031134_AddInvestmentAccounts")]
+    partial class AddInvestmentAccounts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -613,41 +616,6 @@ namespace App.Api.Migrations
                     b.ToTable("investment_accounts", (string)null);
                 });
 
-            modelBuilder.Entity("App.Api.Models.InvestmentAccountMonth", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Balance")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<decimal>("Expenses")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<decimal>("Income")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<Guid>("InvestmentAccountId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Month")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Year")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InvestmentAccountId", "Month", "Year")
-                        .IsUnique();
-
-                    b.ToTable("investment_account_months", (string)null);
-                });
-
             modelBuilder.Entity("App.Api.Models.Month", b =>
                 {
                     b.Property<Guid>("Id")
@@ -934,17 +902,6 @@ namespace App.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Month");
-                });
-
-            modelBuilder.Entity("App.Api.Models.InvestmentAccountMonth", b =>
-                {
-                    b.HasOne("App.Api.Models.InvestmentAccount", "InvestmentAccount")
-                        .WithMany()
-                        .HasForeignKey("InvestmentAccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("InvestmentAccount");
                 });
 
             modelBuilder.Entity("App.Api.Models.SavingAccountMonth", b =>

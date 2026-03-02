@@ -105,6 +105,30 @@
                 </td>
               </tr>
             </template>
+
+            <!-- Inversiones group -->
+            <tr class="row-group" style="cursor:pointer;" @click="inversionesOpen = !inversionesOpen">
+              <td>{{ inversionesOpen ? '▼' : '▶' }} Inversiones</td>
+              <td v-for="m in summary.months" :key="m.id" :class="{ 'current-month': isCurrentMonth(m) }" style="text-align:right;">
+                {{ hideNumbers ? '****' : formatTotal(inversionesTotal(m.id)) }}
+              </td>
+            </tr>
+            <template v-if="inversionesOpen">
+              <tr v-for="account in summary.investments" :key="account.accountId" class="row-subitem">
+                <td>{{ account.accountName }}</td>
+                <td v-for="mt in account.months" :key="mt.monthId" :class="{ 'current-month': isCurrentMonth(mt) }" style="text-align:right;">
+                  {{ hideNumbers ? '****' : formatTotal(mt.total) }}
+                </td>
+              </tr>
+            </template>
+
+            <!-- Patrimonio total -->
+            <tr class="row-patrimonio" style="font-weight:700;font-size:14px;">
+              <td>Patrimonio total</td>
+              <td v-for="m in summary.months" :key="m.id" :class="{ 'current-month': isCurrentMonth(m) }" style="text-align:right;">
+                {{ hideNumbers ? '****' : formatTotal(cajaTotal(m.id) + inversionesTotal(m.id) - fixedExpensesTotal(m.id) - variableExpensesTotal(m.id)) }}
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -125,8 +149,9 @@ const summary = ref(null)
 const fixedExpensesOpen = ref(false)
 const variableExpensesOpen = ref(false)
 const cajaOpen = ref(false)
+const inversionesOpen = ref(false)
 
-const hideNumbers = ref(true)
+const hideNumbers = ref(false)
 
 const now = new Date()
 function isCurrentMonth(m) {
@@ -149,6 +174,13 @@ function variableExpensesTotal(monthId) {
 
 function cajaTotal(monthId) {
   return summary.value.savings.reduce((sum, account) => {
+    const mt = account.months.find(m => m.monthId === monthId)
+    return sum + (mt?.total ?? 0)
+  }, 0)
+}
+
+function inversionesTotal(monthId) {
+  return summary.value.investments.reduce((sum, account) => {
     const mt = account.months.find(m => m.monthId === monthId)
     return sum + (mt?.total ?? 0)
   }, 0)
@@ -219,6 +251,12 @@ function formatTotal(n) {
 }
 th.current-month, td.current-month {
   background: #dde3ea !important;
+}
+.row-patrimonio td {
+  background: #2c3e50;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
 }
 .btn-eye {
   background: white;

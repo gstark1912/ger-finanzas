@@ -147,6 +147,30 @@ public static class DashboardEndpoints
                 })
                 .ToList();
 
+            var investmentMonths = await db.InvestmentAccountMonths
+                .Include(i => i.InvestmentAccount)
+                .Where(i => months.Select(m => m.Year * 100 + m.MonthNumber).Contains(i.Year * 100 + i.Month))
+                .ToListAsync();
+
+            var investments = investmentMonths
+                .GroupBy(i => i.InvestmentAccount)
+                .Select(accountGroup =>
+                {
+                    var byMonth = months.Select(m =>
+                    {
+                        var rate = m.FxRate?.Rate ?? 0m;
+                        var entry = accountGroup.FirstOrDefault(i => i.Month == m.MonthNumber && i.Year == m.Year);
+                        var balance = entry == null ? 0m : accountGroup.Key.Currency == targetCurrency
+                            ? entry.Balance
+                            : targetCurrency == Currency.ARS
+                                ? entry.Balance * rate
+                                : rate > 0 ? entry.Balance / rate : 0m;
+                        return new MonthTotal(m.Id, m.Year, m.MonthNumber, balance);
+                    }).ToList();
+                    return new AccountFixedExpenseSummary(accountGroup.Key.Id, accountGroup.Key.Name, byMonth);
+                })
+                .ToList();
+
             var now = DateTime.UtcNow;
             var currentMonth = months.FirstOrDefault(m => m.Year == now.Year && m.MonthNumber == now.Month)
                 ?? months.OrderByDescending(m => m.Year).ThenByDescending(m => m.MonthNumber).First();
@@ -172,7 +196,7 @@ public static class DashboardEndpoints
                 .Select(m => new MonthWithFxRateDto(m.Id, m.Year, m.MonthNumber, m.FxRate?.Rate))
                 .ToList();
 
-            return Results.Ok(new DashboardSummaryDto(monthHeaders, fixedExpenses, savings, variableExpenses, kpiArs, kpiUsd));
+            return Results.Ok(new DashboardSummaryDto(monthHeaders, fixedExpenses, savings, variableExpenses, investments, kpiArs, kpiUsd));
         })
         .WithTags("Dashboard");
     }
@@ -180,4 +204,4 @@ public static class DashboardEndpoints
 
 public record MonthTotal(Guid MonthId, int Year, int MonthNumber, decimal Total, bool Unpaid = false);
 public record AccountFixedExpenseSummary(Guid AccountId, string AccountName, List<MonthTotal> Months);
-public record DashboardSummaryDto(List<MonthWithFxRateDto> Months, List<AccountFixedExpenseSummary> FixedExpenses, List<AccountFixedExpenseSummary> Savings, List<AccountFixedExpenseSummary> VariableExpenses, decimal KpiCostoMensualArs, decimal KpiCostoMensualUsd);
+public record DashboardSummaryDto(List<MonthWithFxRateDto> Months, List<AccountFixedExpenseSummary> FixedExpenses, List<AccountFixedExpenseSummary> Savings, List<AccountFixedExpenseSummary> VariableExpenses, List<AccountFixedExpenseSummary> Investments, decimal KpiCostoMensualArs, decimal KpiCostoMensualUsd);

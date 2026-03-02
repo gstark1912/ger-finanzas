@@ -12,6 +12,7 @@
         </button>
         <button class="tab" :class="{ active: activeTab === 'fx' }" @click="activeTab = 'fx'">Tipo de cambio</button>
         <button class="tab" :class="{ active: activeTab === 'saving' }" @click="activeTab = 'saving'">Cuentas de Ahorro</button>
+        <button class="tab" :class="{ active: activeTab === 'investment' }" @click="activeTab = 'investment'">Cuentas de Inversión</button>
         <button class="tab" disabled>Categorías</button>
         <button class="tab" disabled>Objetivos</button>
       </div>
@@ -109,6 +110,37 @@
         </table>
       </div>
 
+      <div v-if="activeTab === 'investment'" class="section">
+        <div class="section-header">
+          <div class="section-title">Cuentas de Inversión</div>
+          <button @click="openInvestmentCreate">+ Agregar cuenta</button>
+        </div>
+        <div v-if="investmentStore.loading">Cargando...</div>
+        <table v-else>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Moneda</th>
+              <th>Retorno anual</th>
+              <th>Estado</th>
+              <th style="width:180px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="a in investmentStore.accounts" :key="a.id">
+              <td>{{ a.name }}</td>
+              <td>{{ a.currency }}</td>
+              <td>{{ a.expectedAnnualReturnPct != null ? a.expectedAnnualReturnPct + '%' : '-' }}</td>
+              <td><span :class="['badge', a.isActive ? 'active' : 'inactive']">{{ a.isActive ? 'Activa' : 'Inactiva' }}</span></td>
+              <td class="actions">
+                <button class="btn-small secondary" @click="openInvestmentEdit(a)">Editar</button>
+                <button class="btn-small btn-delete" @click="deleteInvestment(a.id)">Eliminar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <AccountModal v-if="showModal" :account="selectedAccount" @close="closeModal" @submit="handleSubmit" />
 
       <!-- Saving account modal -->
@@ -150,6 +182,42 @@
         </div>
       </div>
 
+      <!-- Investment account modal -->
+      <div v-if="showInvestmentModal" class="modal" @click.self="showInvestmentModal = false">
+        <div class="modal-content">
+          <div class="modal-header">
+            <span class="modal-title">{{ editingInvestment ? 'Editar' : 'Nueva' }} cuenta de inversión</span>
+            <button class="modal-close" @click="showInvestmentModal = false">×</button>
+          </div>
+          <div class="form-group">
+            <label>Nombre</label>
+            <input v-model="investmentForm.name" type="text" />
+          </div>
+          <div class="form-group">
+            <label>Moneda</label>
+            <select v-model="investmentForm.currency">
+              <option value="USD">USD</option>
+              <option value="ARS">ARS</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Retorno anual esperado (%)</label>
+            <input v-model="investmentForm.expectedAnnualReturnPct" type="number" step="0.01" placeholder="Opcional" />
+          </div>
+          <div v-if="editingInvestment" class="form-group">
+            <label>Estado</label>
+            <select v-model="investmentForm.isActive">
+              <option :value="true">Activa</option>
+              <option :value="false">Inactiva</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button class="secondary" @click="showInvestmentModal = false">Cancelar</button>
+            <button @click="submitInvestment">Guardar</button>
+          </div>
+        </div>
+      </div>
+
       <Notification :message="notification.message" :type="notification.type" />
     </div>
   </div>
@@ -161,12 +229,14 @@ import AppNav from '../components/AppNav.vue'
 import { useExpenseAccountStore } from '../stores/expenseAccount'
 import { useMonthStore } from '../stores/month'
 import { useSavingAccountStore } from '../stores/savingAccount'
+import { useInvestmentAccountStore } from '../stores/investmentAccount'
 import AccountModal from '../components/AccountModal.vue'
 import Notification from '../components/Notification.vue'
 
 const store = useExpenseAccountStore()
 const monthStore = useMonthStore()
 const savingStore = useSavingAccountStore()
+const investmentStore = useInvestmentAccountStore()
 const activeTab = ref('accounts')
 const showModal = ref(false)
 const selectedAccount = ref(null)
@@ -175,6 +245,9 @@ const fxEdits = ref({})
 const showSavingModal = ref(false)
 const editingSaving = ref(null)
 const savingForm = ref({ name: '', type: 'Bank', currency: 'USD', isActive: true })
+const showInvestmentModal = ref(false)
+const editingInvestment = ref(null)
+const investmentForm = ref({ name: '', currency: 'USD', isActive: true, expectedAnnualReturnPct: null })
 
 watch(() => monthStore.months, (months) => {
   months.forEach(m => { fxEdits.value[m.id] = m.rate ?? '' })
@@ -184,6 +257,7 @@ onMounted(() => {
   store.fetchAccounts()
   monthStore.fetchMonths()
   savingStore.fetchAccounts()
+  investmentStore.fetchAccounts()
 })
 
 function openCreateModal() {
@@ -267,6 +341,28 @@ async function submitSaving() {
 async function deleteSaving(id) {
   if (!confirm('¿Eliminar esta cuenta?')) return
   await savingStore.deleteAccount(id)
+  showNotification('Cuenta eliminada', 'success')
+}
+
+function openInvestmentCreate() { editingInvestment.value = null; investmentForm.value = { name: '', currency: 'USD', isActive: true, expectedAnnualReturnPct: null }; showInvestmentModal.value = true }
+function openInvestmentEdit(a) { editingInvestment.value = a; investmentForm.value = { name: a.name, currency: a.currency, isActive: a.isActive, expectedAnnualReturnPct: a.expectedAnnualReturnPct }; showInvestmentModal.value = true }
+async function submitInvestment() {
+  if (!investmentForm.value.name) { showNotification('Nombre requerido', 'error'); return }
+  const payload = { ...investmentForm.value, expectedAnnualReturnPct: investmentForm.value.expectedAnnualReturnPct !== '' && investmentForm.value.expectedAnnualReturnPct != null ? Number(investmentForm.value.expectedAnnualReturnPct) : null }
+  try {
+    if (editingInvestment.value) {
+      await investmentStore.updateAccount(editingInvestment.value.id, payload)
+      showNotification('Cuenta actualizada', 'success')
+    } else {
+      await investmentStore.createAccount(payload)
+      showNotification('Cuenta creada', 'success')
+    }
+    showInvestmentModal.value = false
+  } catch (e) { showNotification(e.message, 'error') }
+}
+async function deleteInvestment(id) {
+  if (!confirm('¿Eliminar esta cuenta?')) return
+  await investmentStore.deleteAccount(id)
   showNotification('Cuenta eliminada', 'success')
 }
 

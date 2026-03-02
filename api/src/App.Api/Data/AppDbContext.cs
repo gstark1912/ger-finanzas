@@ -19,6 +19,8 @@ public class AppDbContext : DbContext
     public DbSet<CardExpenseMonth> CardExpenseMonths => Set<CardExpenseMonth>();
     public DbSet<CardBalanceMonth> CardBalanceMonths => Set<CardBalanceMonth>();
     public DbSet<VariableExpense> VariableExpenses => Set<VariableExpense>();
+    public DbSet<InvestmentAccount> InvestmentAccounts => Set<InvestmentAccount>();
+    public DbSet<InvestmentAccountMonth> InvestmentAccountMonths => Set<InvestmentAccountMonth>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -122,6 +124,26 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Currency).HasConversion<string>();
             entity.HasOne(e => e.ExpenseAccount).WithMany().HasForeignKey(e => e.ExpenseAccountId);
             entity.HasIndex(e => new { e.ExpenseAccountId, e.Month, e.Year }).IsUnique();
+        });
+
+        modelBuilder.Entity<InvestmentAccount>(entity =>
+        {
+            entity.ToTable("investment_accounts");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(120);
+            entity.Property(e => e.Currency).HasConversion<string>();
+            entity.Property(e => e.ExpectedAnnualReturnPct).HasPrecision(8, 4);
+        });
+
+        modelBuilder.Entity<InvestmentAccountMonth>(entity =>
+        {
+            entity.ToTable("investment_account_months");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Balance).HasPrecision(18, 2);
+            entity.Property(e => e.Income).HasPrecision(18, 2);
+            entity.Property(e => e.Expenses).HasPrecision(18, 2);
+            entity.HasOne(e => e.InvestmentAccount).WithMany().HasForeignKey(e => e.InvestmentAccountId);
+            entity.HasIndex(e => new { e.InvestmentAccountId, e.Month, e.Year }).IsUnique();
         });
 
         modelBuilder.Entity<CardBalanceMonth>(entity =>
