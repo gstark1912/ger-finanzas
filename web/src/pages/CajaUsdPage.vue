@@ -176,9 +176,19 @@ function fmt(n) {
   return 'U$S ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function openForm(account, month, isIncome) {
-  const sam = getSam(account.id, month.id)
-  if (!sam) return
+async function openForm(account, month, isIncome) {
+  let sam = getSam(account.id, month.id)
+  if (!sam) {
+    await fetch(`${API}/api/saving-account-months?savingAccountId=${account.id}&monthId=${month.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ balance: 0 })
+    })
+    const res = await fetch(`${API}/api/saving-account-months?count=${count.value}`)
+    balances.value = await res.json()
+    sam = getSam(account.id, month.id)
+    if (!sam) return
+  }
   form.value = { show: true, isIncome, accountName: account.name, samId: sam.id, amount: null, date: new Date().toISOString().slice(0, 10), description: '' }
 }
 
