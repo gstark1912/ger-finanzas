@@ -29,5 +29,15 @@ export const useMonthStore = defineStore('month', () => {
     if (month) month.rate = parseFloat(rate)
   }
 
-  return { months, loading, fetchMonths, updateFxRate }
+  async function createMonth(year, month) {
+    const res = await fetch(`${API_BASE_URL}/api/months`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ year, month })
+    })
+    if (!res.ok) throw new Error('Failed to create month')
+    return res.json()
+  }
+
+  return { months, loading, fetchMonths, updateFxRate, createMonth }
 })

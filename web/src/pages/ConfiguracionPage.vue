@@ -7,10 +7,8 @@
       </div>
 
       <div class="tabs">
-        <button class="tab" :class="{ active: activeTab === 'accounts' }" @click="activeTab = 'accounts'">
-          Cuentas de gasto
-        </button>
         <button class="tab" :class="{ active: activeTab === 'fx' }" @click="activeTab = 'fx'">Tipo de cambio</button>
+        <button class="tab" :class="{ active: activeTab === 'accounts' }" @click="activeTab = 'accounts'">Cuentas de gasto</button>
         <button class="tab" :class="{ active: activeTab === 'saving' }" @click="activeTab = 'saving'">Cuentas de Ahorro</button>
         <button class="tab" :class="{ active: activeTab === 'investment' }" @click="activeTab = 'investment'">Cuentas de Inversión</button>
         <button class="tab" disabled>Categorías</button>
@@ -225,6 +223,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import AppNav from '../components/AppNav.vue'
 import { useExpenseAccountStore } from '../stores/expenseAccount'
 import { useMonthStore } from '../stores/month'
@@ -237,7 +236,8 @@ const store = useExpenseAccountStore()
 const monthStore = useMonthStore()
 const savingStore = useSavingAccountStore()
 const investmentStore = useInvestmentAccountStore()
-const activeTab = ref('accounts')
+const route = useRoute()
+const activeTab = ref(route.query.tab || 'fx')
 const showModal = ref(false)
 const selectedAccount = ref(null)
 const notification = ref({ message: '', type: 'success' })

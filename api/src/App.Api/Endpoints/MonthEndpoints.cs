@@ -23,6 +23,18 @@ public static class MonthEndpoints
                 m.Id, m.Year, m.MonthNumber, m.FxRate?.Rate)));
         });
 
+        // POST create month with fx rate 1:1
+        group.MapPost("/", async (CreateMonthRequest req, AppDbContext db) =>
+        {
+            var existing = await db.Months.FirstOrDefaultAsync(m => m.Year == req.Year && m.MonthNumber == req.Month);
+            if (existing is not null) return Results.Conflict(new { error = "Month already exists" });
+            var month = new Month { Id = Guid.NewGuid(), Year = req.Year, MonthNumber = req.Month };
+            db.Months.Add(month);
+            db.FxRateMonths.Add(new FxRateMonth { Id = Guid.NewGuid(), MonthId = month.Id, BaseCurrency = "USD", QuoteCurrency = "ARS", Rate = 1m });
+            await db.SaveChangesAsync();
+            return Results.Created($"/api/months/{month.Id}", new MonthWithFxRateDto(month.Id, month.Year, month.MonthNumber, 1m));
+        });
+
         // PUT upsert fx rate for a month
         group.MapPut("/{id:guid}/fx-rate", async (Guid id, UpsertFxRateRequest request, AppDbContext db) =>
         {

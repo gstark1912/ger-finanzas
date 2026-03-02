@@ -26,3 +26,4 @@ public record MonthWithFxRateDto(
 );
 
 public record UpsertFxRateRequest(decimal Rate);
+public record CreateMonthRequest(int Year, int Month);

@@ -19,6 +19,16 @@ erDiagram
         timestamp updated_at
     }
 
+    investment_accounts {
+        uuid id PK
+        varchar name
+        varchar currency
+        boolean is_active
+        decimal expected_annual_return_pct
+        timestamp created_at
+        timestamp updated_at
+    }
+
     months {
         uuid id PK
         int year
@@ -64,6 +74,16 @@ erDiagram
         decimal amount
         date date
         varchar description
+    }
+
+    investment_account_months {
+        uuid id PK
+        uuid investment_account_id FK
+        int month
+        int year
+        decimal balance
+        decimal income
+        decimal expenses
     }
 
     card_installments {
@@ -116,6 +136,7 @@ erDiagram
     saving_accounts ||--o{ saving_account_months : "has many"
     months ||--o{ saving_account_months : "has many"
     saving_account_months ||--o{ saving_account_month_transactions : "has many"
+    investment_accounts ||--o{ investment_account_months : "has many"
     expense_accounts ||--o{ card_installments : "has many"
     card_installments ||--o{ card_expense_months : "has many"
     expense_accounts ||--o{ card_balance_months : "has many"
