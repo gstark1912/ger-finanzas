@@ -52,7 +52,7 @@ public static class DashboardEndpoints
             var currentMonth = months.FirstOrDefault(m => m.Year == now.Year && m.MonthNumber == now.Month)
                 ?? months.OrderByDescending(m => m.Year).ThenByDescending(m => m.MonthNumber).First();
 
-            decimal kpiArs, kpiUsd;
+            decimal kpiArs, kpiUsd, kpiPatrimonioUsdDelta;
             var currentSnap = snapshots.FirstOrDefault(s => s.Year == currentMonth.Year && s.MonthNumber == currentMonth.MonthNumber);
             if (currentSnap != null)
             {
@@ -60,14 +60,16 @@ public static class DashboardEndpoints
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
                 kpiArs = snapSummary.KpiCostoMensualArs;
                 kpiUsd = snapSummary.KpiCostoMensualUsd;
+                kpiPatrimonioUsdDelta = snapSummary.KpiPatrimonioUsdDelta;
             }
             else
             {
                 kpiArs = liveSummary?.KpiCostoMensualArs ?? 0m;
                 kpiUsd = liveSummary?.KpiCostoMensualUsd ?? 0m;
+                kpiPatrimonioUsdDelta = liveSummary?.KpiPatrimonioUsdDelta ?? 0m;
             }
 
-            return Results.Ok(new DashboardSummaryDto(allMonthHeaders, mergedFixedExpenses, mergedSavings, mergedVariableExpenses, mergedInvestments, kpiArs, kpiUsd));
+            return Results.Ok(new DashboardSummaryDto(allMonthHeaders, mergedFixedExpenses, mergedSavings, mergedVariableExpenses, mergedInvestments, kpiArs, kpiUsd, kpiPatrimonioUsdDelta));
         })
         .WithTags("Dashboard");
     }
@@ -131,4 +133,4 @@ public static class DashboardEndpoints
 
 public record MonthTotal(Guid MonthId, int Year, int MonthNumber, decimal Total, bool Unpaid = false);
 public record AccountFixedExpenseSummary(Guid AccountId, string AccountName, List<MonthTotal> Months);
-public record DashboardSummaryDto(List<MonthWithFxRateDto> Months, List<AccountFixedExpenseSummary> FixedExpenses, List<AccountFixedExpenseSummary> Savings, List<AccountFixedExpenseSummary> VariableExpenses, List<AccountFixedExpenseSummary> Investments, decimal KpiCostoMensualArs, decimal KpiCostoMensualUsd);
+public record DashboardSummaryDto(List<MonthWithFxRateDto> Months, List<AccountFixedExpenseSummary> FixedExpenses, List<AccountFixedExpenseSummary> Savings, List<AccountFixedExpenseSummary> VariableExpenses, List<AccountFixedExpenseSummary> Investments, decimal KpiCostoMensualArs, decimal KpiCostoMensualUsd, decimal KpiPatrimonioUsdDelta);

@@ -30,7 +30,7 @@
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Δ Patrimonio USD</div>
-          <div class="kpi-value usd">{{ hideNumbers ? '****' : 'USD 0' }}</div>
+          <div class="kpi-value" :style="summary.kpiPatrimonioUsdDelta >= 0 ? 'color:#27ae60' : 'color:#c0392b'">{{ hideNumbers ? '****' : (summary.kpiPatrimonioUsdDelta >= 0 ? '+' : '') + 'U$S ' + summary.kpiPatrimonioUsdDelta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Promedio ahorro 6m</div>

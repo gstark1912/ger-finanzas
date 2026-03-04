@@ -144,12 +144,25 @@ public static class DashboardCalculator
         var kpiArs = SumForMonth(fixedExpenses, Currency.ARS) + SumForMonth(variableExpenses, Currency.ARS);
         var kpiUsd = SumForMonth(fixedExpenses, Currency.USD) + SumForMonth(variableExpenses, Currency.USD);
 
+        // Patrimonio USD delta: current month vs previous month
+        var orderedMonths = months.OrderBy(m => m.Year).ThenBy(m => m.MonthNumber).ToList();
+        decimal PatrimonioUsd(Month m) {
+            var rate = m.FxRate?.Rate ?? 1m;
+            var caja = savings.Sum(a => a.Months.FirstOrDefault(x => x.MonthId == m.Id)?.Total ?? 0m);
+            var inv = investments.Sum(a => a.Months.FirstOrDefault(x => x.MonthId == m.Id)?.Total ?? 0m);
+            var total = caja + inv;
+            return targetCurrency == Currency.USD ? total : (rate > 0 ? total / rate : 0m);
+        }
+        var lastMonth = orderedMonths.Last();
+        var prevMonth = orderedMonths.Count > 1 ? orderedMonths[^2] : null;
+        var kpiPatrimonioUsdDelta = prevMonth is not null ? PatrimonioUsd(lastMonth) - PatrimonioUsd(prevMonth) : 0m;
+
         var monthHeaders = months
             .OrderBy(m => m.Year).ThenBy(m => m.MonthNumber)
             .Select(m => new MonthWithFxRateDto(m.Id, m.Year, m.MonthNumber, m.FxRate?.Rate))
             .ToList();
 
-        return new DashboardSummaryDto(monthHeaders, fixedExpenses, savings, variableExpenses, investments, kpiArs, kpiUsd);
+        return new DashboardSummaryDto(monthHeaders, fixedExpenses, savings, variableExpenses, investments, kpiArs, kpiUsd, kpiPatrimonioUsdDelta);
     }
 
     private static decimal Convert(decimal amount, Currency from, Currency to, decimal rate)
