@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<VariableExpense> VariableExpenses => Set<VariableExpense>();
     public DbSet<InvestmentAccount> InvestmentAccounts => Set<InvestmentAccount>();
     public DbSet<InvestmentAccountMonth> InvestmentAccountMonths => Set<InvestmentAccountMonth>();
+    public DbSet<MonthlySnapshot> MonthlySnapshots => Set<MonthlySnapshot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -144,6 +145,15 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Expenses).HasPrecision(18, 2);
             entity.HasOne(e => e.InvestmentAccount).WithMany().HasForeignKey(e => e.InvestmentAccountId);
             entity.HasIndex(e => new { e.InvestmentAccountId, e.Month, e.Year }).IsUnique();
+        });
+
+        modelBuilder.Entity<MonthlySnapshot>(entity =>
+        {
+            entity.ToTable("monthly_snapshots");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FxRate).HasPrecision(18, 4);
+            entity.Property(e => e.SummaryJson).IsRequired();
+            entity.HasIndex(e => new { e.Year, e.MonthNumber }).IsUnique();
         });
 
         modelBuilder.Entity<CardBalanceMonth>(entity =>

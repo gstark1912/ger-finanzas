@@ -22,7 +22,8 @@ public record MonthWithFxRateDto(
     Guid Id,
     int Year,
     int MonthNumber,
-    decimal? Rate
+    decimal? Rate,
+    bool IsClosed = false
 );
 
 public record UpsertFxRateRequest(decimal Rate);

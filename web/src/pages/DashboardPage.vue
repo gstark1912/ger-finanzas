@@ -46,6 +46,8 @@
               <th style="min-width:180px;">Concepto</th>
               <th v-for="m in summary.months" :key="m.id" :class="{ 'current-month': isCurrentMonth(m) }" style="text-align:right;min-width:110px;">
                 {{ formatMonth(m.year, m.monthNumber) }}
+                <span v-if="m.isClosed" title="Mes cerrado">🔒</span>
+                <button v-else-if="isLastOpenMonth(m)" @click="closeMonth(m)" :disabled="closingMonth" class="btn-close-month" title="Cerrar mes">Cerrar mes</button>
               </th>
             </tr>
           </thead>
@@ -143,6 +145,42 @@
           </tbody>
         </table>
       </div>
+      <!-- Modal cierre de mes -->
+      <div v-if="closeModal.open" class="modal-overlay" @click.self="closeModal.open = false">
+        <div class="modal">
+          <!-- Paso 1: advertencias -->
+          <template v-if="closeModal.step === 1">
+            <h3>Cerrar {{ formatMonth(closeModal.month?.year, closeModal.month?.monthNumber) }}</h3>
+            <div v-if="closeModal.loading" style="padding:16px;color:#7f8c8d;">Verificando...</div>
+            <template v-else>
+              <div v-if="closeModal.unpaidFixed.length || closeModal.unpaidCards.length" class="modal-warnings">
+                <p style="color:#c0392b;font-weight:600;">⚠️ Hay ítems pendientes de pago:</p>
+                <ul>
+                  <li v-for="name in closeModal.unpaidFixed" :key="name">Gasto fijo: <strong>{{ name }}</strong></li>
+                  <li v-for="name in closeModal.unpaidCards" :key="name">Tarjeta: <strong>{{ name }}</strong></li>
+                </ul>
+                <p style="font-size:13px;color:#7f8c8d;">Podés continuar de todas formas.</p>
+              </div>
+              <p v-else style="color:#27ae60;">✅ No hay ítems pendientes de pago.</p>
+              <div class="modal-actions">
+                <button @click="closeModal.open = false" class="btn-secondary">Cancelar</button>
+                <button @click="closeModal.step = 2" class="btn-primary">Continuar →</button>
+              </div>
+            </template>
+          </template>
+          <!-- Paso 2: confirmación final -->
+          <template v-else-if="closeModal.step === 2">
+            <h3>⚠️ Confirmar cierre</h3>
+            <p>Estás por cerrar <strong>{{ formatMonth(closeModal.month?.year, closeModal.month?.monthNumber) }}</strong>.</p>
+            <p style="color:#c0392b;font-size:13px;">Este proceso <strong>no tiene vuelta atrás</strong>. No se podrá editar información de un mes cerrado.</p>
+            <div class="modal-actions">
+              <button @click="closeModal.step = 1" class="btn-secondary">← Volver</button>
+              <button @click="confirmClose" :disabled="closingMonth" class="btn-danger">{{ closingMonth ? 'Cerrando...' : 'Cerrar mes' }}</button>
+            </div>
+          </template>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
@@ -167,6 +205,14 @@ const hideNumbers = ref(false)
 const now = new Date()
 function isCurrentMonth(m) {
   return m.year === now.getFullYear() && m.monthNumber === now.getMonth() + 1
+}
+
+function isLastOpenMonth(m) {
+  if (!summary.value) return false
+  const openMonths = summary.value.months.filter(x => !x.isClosed)
+  if (openMonths.length === 0) return false
+  const last = openMonths.reduce((a, b) => (a.year * 100 + a.monthNumber) > (b.year * 100 + b.monthNumber) ? a : b)
+  return last.year === m.year && last.monthNumber === m.monthNumber
 }
 
 function fixedExpensesTotal(monthId) {
@@ -197,6 +243,9 @@ function inversionesTotal(monthId) {
   }, 0)
 }
 
+const closingMonth = ref(false)
+const closeModal = ref({ open: false, step: 1, month: null, loading: false, unpaidFixed: [], unpaidCards: [] })
+
 async function loadData() {
   loading.value = true
   try {
@@ -204,6 +253,39 @@ async function loadData() {
     summary.value = await res.json()
   } finally {
     loading.value = false
+  }
+}
+
+async function closeMonth(m) {
+  closeModal.value = { open: true, step: 1, month: m, loading: true, unpaidFixed: [], unpaidCards: [] }
+  try {
+    const res = await fetch(`${API}/api/monthly-snapshots/close-check/${m.year}/${m.monthNumber}`)
+    const data = await res.json()
+    closeModal.value.unpaidFixed = data.unpaidFixedExpenses ?? []
+    closeModal.value.unpaidCards = data.unpaidCards ?? []
+  } finally {
+    closeModal.value.loading = false
+  }
+}
+
+async function confirmClose() {
+  closingMonth.value = true
+  try {
+    const { year, monthNumber } = closeModal.value.month
+    const res = await fetch(`${API}/api/monthly-snapshots/close`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ year, month: monthNumber })
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      alert(err.error || 'Error al cerrar el mes')
+      return
+    }
+    closeModal.value.open = false
+    await loadData()
+  } finally {
+    closingMonth.value = false
   }
 }
 
@@ -280,6 +362,45 @@ th.current-month, td.current-month {
   font-weight: 700;
   font-size: 14px;
 }
+.btn-close-month {
+  display: block;
+  margin: 4px auto 0;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-close-month:disabled { opacity: 0.5; cursor: not-allowed; }
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 28px;
+  min-width: 380px;
+  max-width: 480px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+.modal h3 { margin: 0 0 16px; font-size: 18px; }
+.modal p { margin: 0 0 12px; }
+.modal ul { margin: 8px 0 12px 20px; padding: 0; }
+.modal ul li { margin-bottom: 4px; font-size: 14px; }
+.modal-warnings { background: #fdf3f2; border: 1px solid #f5c6c2; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.btn-primary { background: #2c3e50; color: white; border: none; border-radius: 6px; padding: 8px 18px; cursor: pointer; font-size: 14px; }
+.btn-secondary { background: white; color: #2c3e50; border: 1px solid #ccc; border-radius: 6px; padding: 8px 18px; cursor: pointer; font-size: 14px; }
+.btn-danger { background: #c0392b; color: white; border: none; border-radius: 6px; padding: 8px 18px; cursor: pointer; font-size: 14px; }
+.btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-eye {
   background: white;
   border: 1px solid #ccc;

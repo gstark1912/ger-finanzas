@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using App.Api.Data;
 using App.Api.Models;
 
@@ -19,186 +20,112 @@ public static class DashboardEndpoints
                 .Take(lastMonths)
                 .ToListAsync();
 
-            var monthIds = months.Select(m => m.Id).ToList();
-
-            var entries = await db.FixedExpenseMonthEntries
-                .Include(e => e.Definition)
-                    .ThenInclude(d => d.ExpenseAccount)
-                .Where(e => monthIds.Contains(e.MonthId))
+            var snapshots = await db.MonthlySnapshots
+                .Where(s => months.Select(m => m.Year * 100 + m.MonthNumber).Contains(s.Year * 100 + s.MonthNumber))
                 .ToListAsync();
 
-            // Group by account → month → sum (converted to target currency)
-            var fixedExpenses = entries
-                .GroupBy(e => e.Definition.ExpenseAccount)
-                .Select(accountGroup =>
-                {
-                    var byMonth = months.Select(m =>
-                    {
-                        var rate = m.FxRate?.Rate ?? 0m;
-                        var total = accountGroup
-                            .Where(e => e.MonthId == m.Id)
-                            .Sum(e =>
-                            {
-                                if (e.Definition.Currency == targetCurrency) return e.Amount;
-                                if (targetCurrency == Currency.ARS) return e.Amount * rate;
-                                return rate > 0 ? e.Amount / rate : 0m;
-                            });
-                        return new MonthTotal(m.Id, m.Year, m.MonthNumber, total);
-                    }).ToList();
+            var closedMonthKeys = snapshots.Select(s => s.Year * 100 + s.MonthNumber).ToHashSet();
 
-                    return new AccountFixedExpenseSummary(
-                        accountGroup.Key.Id,
-                        accountGroup.Key.Name,
-                        byMonth
-                    );
+            // Months that need live calculation
+            var liveMonths = months.Where(m => !closedMonthKeys.Contains(m.Year * 100 + m.MonthNumber)).ToList();
+
+            DashboardSummaryDto? liveSummary = null;
+            if (liveMonths.Count > 0)
+                liveSummary = await DashboardCalculator.Calculate(db, liveMonths, targetCurrency);
+
+            // Merge snapshot data with live data per month
+            var allMonthHeaders = months
+                .OrderBy(m => m.Year).ThenBy(m => m.MonthNumber)
+                .Select(m =>
+                {
+                    var snap = snapshots.FirstOrDefault(s => s.Year == m.Year && s.MonthNumber == m.MonthNumber);
+                    return new MonthWithFxRateDto(m.Id, m.Year, m.MonthNumber, snap?.FxRate ?? m.FxRate?.Rate, snap != null);
                 })
                 .ToList();
 
-            var ccAccounts = await db.ExpenseAccounts
-                .Where(a => a.Type == ExpenseAccountType.CC && a.IsActive)
-                .ToListAsync();
-
-            var cardExpenseMonths = await db.CardExpenseMonths
-                .Where(e => ccAccounts.Select(a => a.Id).Contains(e.CardInstallment.ExpenseAccountId)
-                    && months.Select(m => m.Year * 100 + m.MonthNumber).Contains(e.Year * 100 + e.Month))
-                .Include(e => e.CardInstallment)
-                .ToListAsync();
-
-            var cardBalanceMonths = await db.CardBalanceMonths
-                .Where(b => ccAccounts.Select(a => a.Id).Contains(b.ExpenseAccountId)
-                    && months.Select(m => m.Year * 100 + m.MonthNumber).Contains(b.Year * 100 + b.Month))
-                .ToListAsync();
-
-            var nonCcAccounts = await db.ExpenseAccounts
-                .Where(a => a.Type != ExpenseAccountType.CC && a.IsActive)
-                .ToListAsync();
-
-            var nonCcAccountIds = nonCcAccounts.Select(a => a.Id).ToList();
-            var monthKeys = months.Select(m => m.Year * 100 + m.MonthNumber).ToList();
-
-            var nonCcVariableExpenses = await db.VariableExpenses
-                .Where(v => nonCcAccountIds.Contains(v.ExpenseAccountId)
-                    && monthKeys.Contains(v.Year * 100 + v.Month))
-                .ToListAsync();
-
-            var variableExpenses = ccAccounts.Select(account =>
-            {
-                var byMonth = months.Select(m =>
-                {
-                    var rate = m.FxRate?.Rate ?? 0m;
-                    var installmentsTotal = cardExpenseMonths
-                        .Where(e => e.CardInstallment.ExpenseAccountId == account.Id && e.Month == m.MonthNumber && e.Year == m.Year)
-                        .Sum(e =>
-                        {
-                            if (e.Currency == targetCurrency) return e.Total;
-                            if (targetCurrency == Currency.ARS) return e.Total * rate;
-                            return rate > 0 ? e.Total / rate : 0m;
-                        });
-                    var balance = cardBalanceMonths.FirstOrDefault(b => b.ExpenseAccountId == account.Id && b.Month == m.MonthNumber && b.Year == m.Year);
-                    decimal balanceTotal = 0m;
-                    if (balance != null)
-                    {
-                        balanceTotal = targetCurrency == Currency.ARS
-                            ? balance.OtherExpensesArs + balance.OtherExpensesUsd * rate
-                            : (rate > 0 ? balance.OtherExpensesArs / rate : 0m) + balance.OtherExpensesUsd;
-                    }
-                    return new MonthTotal(m.Id, m.Year, m.MonthNumber, installmentsTotal + balanceTotal, balance != null && !balance.Paid);
-                }).ToList();
-                return new AccountFixedExpenseSummary(account.Id, account.Name, byMonth);
-            })
-            .Concat(nonCcAccounts.Select(account =>
-            {
-                var byMonth = months.Select(m =>
-                {
-                    var rate = m.FxRate?.Rate ?? 0m;
-                    var ve = nonCcVariableExpenses.FirstOrDefault(v => v.ExpenseAccountId == account.Id && v.Month == m.MonthNumber && v.Year == m.Year);
-                    if (ve == null) return new MonthTotal(m.Id, m.Year, m.MonthNumber, 0m);
-                    decimal total = ve.Currency == targetCurrency ? ve.Total
-                        : targetCurrency == Currency.ARS ? ve.Total * rate
-                        : rate > 0 ? ve.Total / rate : 0m;
-                    return new MonthTotal(m.Id, m.Year, m.MonthNumber, total);
-                }).ToList();
-                return new AccountFixedExpenseSummary(account.Id, account.Name, byMonth);
-            }))
-            .ToList();
-
-            var savingAccountMonths = await db.SavingAccountMonths
-                .Include(s => s.SavingAccount)
-                .Include(s => s.Month).ThenInclude(m => m.FxRate)
-                .Where(s => monthIds.Contains(s.MonthId))
-                .ToListAsync();
-
-            var savings = savingAccountMonths
-                .GroupBy(s => s.SavingAccount)
-                .Select(accountGroup =>
-                {
-                    var byMonth = months.Select(m =>
-                    {
-                        var rate = m.FxRate?.Rate ?? 0m;
-                        var entry = accountGroup.FirstOrDefault(s => s.MonthId == m.Id);
-                        var balance = entry == null ? 0m : entry.SavingAccount.Currency == targetCurrency
-                            ? entry.Balance
-                            : targetCurrency == Currency.ARS
-                                ? entry.Balance * rate
-                                : rate > 0 ? entry.Balance / rate : 0m;
-                        return new MonthTotal(m.Id, m.Year, m.MonthNumber, balance);
-                    }).ToList();
-                    return new AccountFixedExpenseSummary(accountGroup.Key.Id, accountGroup.Key.Name, byMonth);
-                })
-                .ToList();
-
-            var investmentMonths = await db.InvestmentAccountMonths
-                .Include(i => i.InvestmentAccount)
-                .Where(i => months.Select(m => m.Year * 100 + m.MonthNumber).Contains(i.Year * 100 + i.Month))
-                .ToListAsync();
-
-            var investments = investmentMonths
-                .GroupBy(i => i.InvestmentAccount)
-                .Select(accountGroup =>
-                {
-                    var byMonth = months.Select(m =>
-                    {
-                        var rate = m.FxRate?.Rate ?? 0m;
-                        var entry = accountGroup.FirstOrDefault(i => i.Month == m.MonthNumber && i.Year == m.Year);
-                        var balance = entry == null ? 0m : accountGroup.Key.Currency == targetCurrency
-                            ? entry.Balance
-                            : targetCurrency == Currency.ARS
-                                ? entry.Balance * rate
-                                : rate > 0 ? entry.Balance / rate : 0m;
-                        return new MonthTotal(m.Id, m.Year, m.MonthNumber, balance);
-                    }).ToList();
-                    return new AccountFixedExpenseSummary(accountGroup.Key.Id, accountGroup.Key.Name, byMonth);
-                })
-                .ToList();
+            var mergedFixedExpenses = MergeGroups(months, snapshots, liveSummary, targetCurrency, s => s.FixedExpenses);
+            var mergedVariableExpenses = MergeGroups(months, snapshots, liveSummary, targetCurrency, s => s.VariableExpenses);
+            var mergedSavings = MergeGroups(months, snapshots, liveSummary, targetCurrency, s => s.Savings);
+            var mergedInvestments = MergeGroups(months, snapshots, liveSummary, targetCurrency, s => s.Investments);
 
             var now = DateTime.UtcNow;
             var currentMonth = months.FirstOrDefault(m => m.Year == now.Year && m.MonthNumber == now.Month)
                 ?? months.OrderByDescending(m => m.Year).ThenByDescending(m => m.MonthNumber).First();
-            var currentRate = currentMonth.FxRate?.Rate ?? 0m;
 
-            decimal SumForMonth(IEnumerable<AccountFixedExpenseSummary> groups, Currency toCurrency)
+            decimal kpiArs, kpiUsd;
+            var currentSnap = snapshots.FirstOrDefault(s => s.Year == currentMonth.Year && s.MonthNumber == currentMonth.MonthNumber);
+            if (currentSnap != null)
             {
-                return groups.Sum(acc =>
-                {
-                    var mt = acc.Months.FirstOrDefault(x => x.MonthId == currentMonth.Id);
-                    if (mt == null) return 0m;
-                    if (targetCurrency == toCurrency) return mt.Total;
-                    if (toCurrency == Currency.ARS) return mt.Total * currentRate;
-                    return currentRate > 0 ? mt.Total / currentRate : 0m;
-                });
+                var snapSummary = JsonSerializer.Deserialize<DashboardSummaryDto>(currentSnap.SummaryJson,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+                kpiArs = snapSummary.KpiCostoMensualArs;
+                kpiUsd = snapSummary.KpiCostoMensualUsd;
+            }
+            else
+            {
+                kpiArs = liveSummary?.KpiCostoMensualArs ?? 0m;
+                kpiUsd = liveSummary?.KpiCostoMensualUsd ?? 0m;
             }
 
-            var kpiArs = SumForMonth(fixedExpenses, Currency.ARS) + SumForMonth(variableExpenses, Currency.ARS);
-            var kpiUsd = SumForMonth(fixedExpenses, Currency.USD) + SumForMonth(variableExpenses, Currency.USD);
-
-            var monthHeaders = months
-                .OrderBy(m => m.Year).ThenBy(m => m.MonthNumber)
-                .Select(m => new MonthWithFxRateDto(m.Id, m.Year, m.MonthNumber, m.FxRate?.Rate))
-                .ToList();
-
-            return Results.Ok(new DashboardSummaryDto(monthHeaders, fixedExpenses, savings, variableExpenses, investments, kpiArs, kpiUsd));
+            return Results.Ok(new DashboardSummaryDto(allMonthHeaders, mergedFixedExpenses, mergedSavings, mergedVariableExpenses, mergedInvestments, kpiArs, kpiUsd));
         })
         .WithTags("Dashboard");
+    }
+
+    private static List<AccountFixedExpenseSummary> MergeGroups(
+        List<Month> months,
+        List<MonthlySnapshot> snapshots,
+        DashboardSummaryDto? liveSummary,
+        Currency targetCurrency,
+        Func<DashboardSummaryDto, List<AccountFixedExpenseSummary>> selector)
+    {
+        var result = new Dictionary<Guid, AccountFixedExpenseSummary>();
+
+        // Add live months data
+        if (liveSummary != null)
+        {
+            foreach (var acc in selector(liveSummary))
+            {
+                result[acc.AccountId] = acc;
+            }
+        }
+
+        // Merge snapshot months into each account
+        foreach (var snap in snapshots)
+        {
+            var snapSummary = JsonSerializer.Deserialize<DashboardSummaryDto>(snap.SummaryJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+            var month = months.First(m => m.Year == snap.Year && m.MonthNumber == snap.MonthNumber);
+
+            foreach (var acc in selector(snapSummary))
+            {
+                var snapMonthTotal = acc.Months.FirstOrDefault(mt => mt.Year == snap.Year && mt.MonthNumber == snap.MonthNumber);
+                if (snapMonthTotal == null) continue;
+
+                // Remap MonthId to the actual Month.Id from our months list
+                var remapped = snapMonthTotal with { MonthId = month.Id };
+
+                if (result.TryGetValue(acc.AccountId, out var existing))
+                {
+                    var updatedMonths = existing.Months.Where(mt => mt.MonthId != month.Id).Append(remapped).ToList();
+                    result[acc.AccountId] = existing with { Months = updatedMonths };
+                }
+                else
+                {
+                    result[acc.AccountId] = acc with { Months = [remapped] };
+                }
+            }
+        }
+
+        // Ensure all accounts have entries for all months (fill missing with 0)
+        var monthIds = months.Select(m => m.Id).ToList();
+        return result.Values.Select(acc =>
+        {
+            var filledMonths = months.OrderBy(m => m.Year).ThenBy(m => m.MonthNumber).Select(m =>
+                acc.Months.FirstOrDefault(mt => mt.MonthId == m.Id) ?? new MonthTotal(m.Id, m.Year, m.MonthNumber, 0m)
+            ).ToList();
+            return acc with { Months = filledMonths };
+        }).ToList();
     }
 }
 
