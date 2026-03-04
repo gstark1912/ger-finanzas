@@ -26,7 +26,7 @@
                 {{ inst.description }} ({{ inst.installments }}c)
                 <button class="btn-icon" style="margin-left:6px;font-size:12px;opacity:0.5;" @click="deleteInstallment(inst.id)">🗑</button>
               </td>
-              <td v-for="m in inst.months" :key="m.year+'-'+m.month" style="text-align:center;" :style="isCurrentMonth(m.year, m.month) ? 'background:#f0f4f8;' : ''">
+              <td v-for="m in inst.months" :key="m.year+'-'+m.month" style="text-align:center;" :style="isCurrentMonth(m.year, m.month) ? 'background:var(--current-month-cell);' : ''">
                 <template v-if="m.total !== 0">
                   <span :style="m.paid ? 'color:#27ae60;font-weight:500;' : 'color:#555;'">
                     {{ formatTotal(m.total) }}
@@ -41,20 +41,20 @@
             <!-- Otros gastos ARS row -->
             <tr class="row-subitem">
               <td style="padding-left:16px;color:#888;">Otros gastos ARS</td>
-              <td v-for="mh in summary.monthHeaders" :key="mh.year+'-'+mh.month" style="text-align:center;color:#888;" :style="isCurrentMonth(mh.year, mh.month) ? 'background:#f0f4f8;' : ''">
+              <td v-for="mh in summary.monthHeaders" :key="mh.year+'-'+mh.month" style="text-align:center;color:#888;" :style="isCurrentMonth(mh.year, mh.month) ? 'background:var(--current-month-cell);' : ''">
                 {{ getBalance(group, mh)?.otherExpensesArs ? getBalance(group, mh).otherExpensesArs.toLocaleString('es-AR', { style:'currency', currency:'ARS', maximumFractionDigits:0 }) : '—' }}
               </td>
             </tr>
             <!-- Otros gastos USD row -->
             <tr class="row-subitem">
               <td style="padding-left:16px;color:#888;">Otros gastos USD</td>
-              <td v-for="mh in summary.monthHeaders" :key="mh.year+'-'+mh.month" style="text-align:center;color:#888;" :style="isCurrentMonth(mh.year, mh.month) ? 'background:#f0f4f8;' : ''">
+              <td v-for="mh in summary.monthHeaders" :key="mh.year+'-'+mh.month" style="text-align:center;color:#888;" :style="isCurrentMonth(mh.year, mh.month) ? 'background:var(--current-month-cell);' : ''">
                 {{ getBalance(group, mh)?.otherExpensesUsd ? 'U$S ' + getBalance(group, mh).otherExpensesUsd.toLocaleString('es-AR', { minimumFractionDigits:2, maximumFractionDigits:2 }) : '—' }}
               </td>
             </tr>
             <tr class="group-total-row">
               <td style="font-weight:600;">Total {{ group.accountName }}</td>
-              <td v-for="mh in summary.monthHeaders" :key="mh.year+'-'+mh.month" style="text-align:center;font-weight:600;" :style="isCurrentMonth(mh.year, mh.month) ? 'background:#e8edf2;' : ''">
+              <td v-for="mh in summary.monthHeaders" :key="mh.year+'-'+mh.month" style="text-align:center;font-weight:600;" :style="isCurrentMonth(mh.year, mh.month) ? 'background:var(--current-month-header);' : ''">
                 <span :style="getBalance(group, mh)?.paid ? 'color:#27ae60;' : ''">{{ formatTotal(groupTotal(group, mh.year, mh.month)) }}</span>
                 <template v-if="isRealMonth(mh.year, mh.month) && groupTotal(group, mh.year, mh.month) !== 0">
                   <button class="btn-small" :class="getBalance(group, mh)?.paid ? 'secondary' : ''"
@@ -307,7 +307,7 @@ onMounted(async () => {
   padding: 8px 12px;
 }
 .group-total-row td {
-  background: #f0f4f8;
+  background: var(--current-month-cell);
   font-size: 13px;
   padding: 8px 12px;
   border-top: 1px solid #dde3ea;

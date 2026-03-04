@@ -1,3 +1,8 @@
+:root {
+  --current-month-header: #eaecf0;
+  --current-month-cell: #f4f5f7;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -267,6 +272,16 @@ select:focus {
   justify-content: flex-end;
   margin-top: 24px;
 }
+
+.modal-warnings {
+  background: #fdf3f2;
+  border: 1px solid #f5c6c2;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+.modal-warnings ul { margin: 8px 0 0 20px; padding: 0; }
+.modal-warnings ul li { margin-bottom: 4px; font-size: 14px; }
 
 .notification {
   position: fixed;

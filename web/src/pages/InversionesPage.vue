@@ -228,5 +228,5 @@ onMounted(loadData)
 .btn-tx.income:hover { background: #27ae60; color: white; }
 .btn-tx.expense { background: #fdf0f0; color: #e74c3c; }
 .btn-tx.expense:hover { background: #e74c3c; color: white; }
-.total-row td { background: #e8f4f8; border-top: 2px solid #b8d4e0; }
+.total-row td { background: var(--current-month-cell); border-top: 2px solid #e0e0e0; }
 </style>

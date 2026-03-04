@@ -343,7 +343,7 @@ const CellEditor = defineComponent({
 
 <style scoped>
 .group-total-row td {
-  background: #f0f4f8;
+  background: var(--current-month-cell);
   font-size: 13px;
   padding: 8px 12px;
   border-top: 1px solid #dde3ea;

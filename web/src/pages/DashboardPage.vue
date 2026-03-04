@@ -145,42 +145,48 @@
           </tbody>
         </table>
       </div>
-      <!-- Modal cierre de mes -->
-      <div v-if="closeModal.open" class="modal-overlay" @click.self="closeModal.open = false">
-        <div class="modal">
-          <!-- Paso 1: advertencias -->
-          <template v-if="closeModal.step === 1">
-            <h3>Cerrar {{ formatMonth(closeModal.month?.year, closeModal.month?.monthNumber) }}</h3>
-            <div v-if="closeModal.loading" style="padding:16px;color:#7f8c8d;">Verificando...</div>
-            <template v-else>
-              <div v-if="closeModal.unpaidFixed.length || closeModal.unpaidCards.length" class="modal-warnings">
-                <p style="color:#c0392b;font-weight:600;">⚠️ Hay ítems pendientes de pago:</p>
-                <ul>
-                  <li v-for="name in closeModal.unpaidFixed" :key="name">Gasto fijo: <strong>{{ name }}</strong></li>
-                  <li v-for="name in closeModal.unpaidCards" :key="name">Tarjeta: <strong>{{ name }}</strong></li>
-                </ul>
-                <p style="font-size:13px;color:#7f8c8d;">Podés continuar de todas formas.</p>
-              </div>
-              <p v-else style="color:#27ae60;">✅ No hay ítems pendientes de pago.</p>
-              <div class="modal-actions">
-                <button @click="closeModal.open = false" class="btn-secondary">Cancelar</button>
-                <button @click="closeModal.step = 2" class="btn-primary">Continuar →</button>
-              </div>
-            </template>
-          </template>
-          <!-- Paso 2: confirmación final -->
-          <template v-else-if="closeModal.step === 2">
-            <h3>⚠️ Confirmar cierre</h3>
-            <p>Estás por cerrar <strong>{{ formatMonth(closeModal.month?.year, closeModal.month?.monthNumber) }}</strong>.</p>
-            <p style="color:#c0392b;font-size:13px;">Este proceso <strong>no tiene vuelta atrás</strong>. No se podrá editar información de un mes cerrado.</p>
-            <div class="modal-actions">
-              <button @click="closeModal.step = 1" class="btn-secondary">← Volver</button>
-              <button @click="confirmClose" :disabled="closingMonth" class="btn-danger">{{ closingMonth ? 'Cerrando...' : 'Cerrar mes' }}</button>
+    </div>
+
+    <!-- Modal cierre de mes -->
+    <div v-if="closeModal.open" class="modal" @click.self="closeModal.open = false">
+      <div class="modal-content">
+        <!-- Paso 1: advertencias -->
+        <template v-if="closeModal.step === 1">
+          <div class="modal-header">
+            <span class="modal-title">Cerrar {{ formatMonth(closeModal.month?.year, closeModal.month?.monthNumber) }}</span>
+            <button class="modal-close" @click="closeModal.open = false">×</button>
+          </div>
+          <div v-if="closeModal.loading" style="padding:16px;color:#7f8c8d;">Verificando...</div>
+          <template v-else>
+            <div v-if="closeModal.unpaidFixed.length || closeModal.unpaidCards.length" class="modal-warnings">
+              <p style="color:#c0392b;font-weight:600;">⚠️ Hay ítems pendientes de pago:</p>
+              <ul>
+                <li v-for="name in closeModal.unpaidFixed" :key="name">Gasto fijo: <strong>{{ name }}</strong></li>
+                <li v-for="name in closeModal.unpaidCards" :key="name">Tarjeta: <strong>{{ name }}</strong></li>
+              </ul>
+              <p style="font-size:13px;color:#7f8c8d;">Podés continuar de todas formas.</p>
+            </div>
+            <p v-else style="color:#27ae60;">✅ No hay ítems pendientes de pago.</p>
+            <div class="form-actions">
+              <button class="secondary" @click="closeModal.open = false">Cancelar</button>
+              <button @click="closeModal.step = 2">Continuar →</button>
             </div>
           </template>
-        </div>
+        </template>
+        <!-- Paso 2: confirmación final -->
+        <template v-else-if="closeModal.step === 2">
+          <div class="modal-header">
+            <span class="modal-title">⚠️ Confirmar cierre</span>
+            <button class="modal-close" @click="closeModal.open = false">×</button>
+          </div>
+          <p>Estás por cerrar <strong>{{ formatMonth(closeModal.month?.year, closeModal.month?.monthNumber) }}</strong>.</p>
+          <p style="color:#c0392b;font-size:13px;margin-top:8px;">Este proceso <strong>no tiene vuelta atrás</strong>. No se podrá editar información de un mes cerrado.</p>
+          <div class="form-actions">
+            <button class="secondary" @click="closeModal.step = 1">← Volver</button>
+            <button class="btn-danger" @click="confirmClose" :disabled="closingMonth">{{ closingMonth ? 'Cerrando...' : 'Cerrar mes' }}</button>
+          </div>
+        </template>
       </div>
-
     </div>
   </div>
 </template>
@@ -343,7 +349,10 @@ function formatTotal(n) {
   color: #555;
 }
 th.current-month, td.current-month {
-  background: #dde3ea !important;
+  background: var(--current-month-cell);
+}
+th.current-month {
+  background: var(--current-month-header);
 }
 .row-total-gastos td {
   background: #922b21;
@@ -374,33 +383,6 @@ th.current-month, td.current-month {
   cursor: pointer;
 }
 .btn-close-month:disabled { opacity: 0.5; cursor: not-allowed; }
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-.modal {
-  background: white;
-  border-radius: 12px;
-  padding: 28px;
-  min-width: 380px;
-  max-width: 480px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-}
-.modal h3 { margin: 0 0 16px; font-size: 18px; }
-.modal p { margin: 0 0 12px; }
-.modal ul { margin: 8px 0 12px 20px; padding: 0; }
-.modal ul li { margin-bottom: 4px; font-size: 14px; }
-.modal-warnings { background: #fdf3f2; border: 1px solid #f5c6c2; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-.btn-primary { background: #2c3e50; color: white; border: none; border-radius: 6px; padding: 8px 18px; cursor: pointer; font-size: 14px; }
-.btn-secondary { background: white; color: #2c3e50; border: 1px solid #ccc; border-radius: 6px; padding: 8px 18px; cursor: pointer; font-size: 14px; }
-.btn-danger { background: #c0392b; color: white; border: none; border-radius: 6px; padding: 8px 18px; cursor: pointer; font-size: 14px; }
-.btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-eye {
   background: white;
   border: 1px solid #ccc;

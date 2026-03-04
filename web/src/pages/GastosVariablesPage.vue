@@ -24,7 +24,7 @@
               <td
                 v-for="m in months" :key="m.id"
                 style="text-align:center;min-width:130px;"
-                :style="m.id === latestMonthId ? 'background:#e8edf2;' : ''"
+                :style="m.id === latestMonthId ? 'background:var(--current-month-cell);' : ''"
               >
                 <template v-if="m.id === latestMonthId">
                   <input v-if="editing" type="number" :value="getDraft(account.id, m.monthNumber, m.year)"
@@ -45,7 +45,7 @@
               <th
                 v-for="m in months" :key="m.id"
                 style="text-align:center;min-width:130px;"
-                :style="m.id === latestMonthId ? 'background:#e8edf2;' : ''"
+                :style="m.id === latestMonthId ? 'background:var(--current-month-header);' : ''"
               >
                 <template v-if="m.id === latestMonthId">
                   <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
