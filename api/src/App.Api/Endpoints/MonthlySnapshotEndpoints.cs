@@ -40,11 +40,28 @@ public static class MonthlySnapshotEndpoints
                 .Select(d => d.Name)
                 .ToList();
 
-            // CC cards with unpaid balance
-            var unpaidCards = await db.CardBalanceMonths
-                .Include(b => b.ExpenseAccount)
-                .Where(b => b.Year == year && b.Month == month && !b.Paid)
-                .Select(b => b.ExpenseAccount.Name)
+            // CC cards with unpaid balance: has expenses for the month but no CardBalanceMonth with Paid = true
+            var ccAccountIds = await db.ExpenseAccounts
+                .Where(a => a.Type == ExpenseAccountType.CC && a.IsActive)
+                .Select(a => a.Id)
+                .ToListAsync();
+
+            var paidCardIds = await db.CardBalanceMonths
+                .Where(b => b.Year == year && b.Month == month && b.Paid)
+                .Select(b => b.ExpenseAccountId)
+                .ToListAsync();
+
+            var cardsWithExpenses = await db.CardExpenseMonths
+                .Where(e => e.Year == year && e.Month == month && e.Total > 0
+                    && ccAccountIds.Contains(e.CardInstallment.ExpenseAccountId))
+                .Select(e => e.CardInstallment.ExpenseAccountId)
+                .Distinct()
+                .ToListAsync();
+
+            var unpaidCardIds = cardsWithExpenses.Where(id => !paidCardIds.Contains(id)).ToList();
+            var unpaidCards = await db.ExpenseAccounts
+                .Where(a => unpaidCardIds.Contains(a.Id))
+                .Select(a => a.Name)
                 .ToListAsync();
 
             return Results.Ok(new CloseCheckDto(unpaidFixed, unpaidCards));

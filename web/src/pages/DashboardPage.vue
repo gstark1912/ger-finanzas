@@ -164,12 +164,12 @@
                 <li v-for="name in closeModal.unpaidFixed" :key="name">Gasto fijo: <strong>{{ name }}</strong></li>
                 <li v-for="name in closeModal.unpaidCards" :key="name">Tarjeta: <strong>{{ name }}</strong></li>
               </ul>
-              <p style="font-size:13px;color:#7f8c8d;">Podés continuar de todas formas.</p>
+              <p style="font-size:13px;color:#7f8c8d;">Resolvé los pendientes antes de cerrar el mes.</p>
             </div>
             <p v-else style="color:#27ae60;">✅ No hay ítems pendientes de pago.</p>
             <div class="form-actions">
               <button class="secondary" @click="closeModal.open = false">Cancelar</button>
-              <button @click="closeModal.step = 2">Continuar →</button>
+              <button @click="closeModal.step = 2" :disabled="closeModal.unpaidFixed.length > 0 || closeModal.unpaidCards.length > 0">Continuar →</button>
             </div>
           </template>
         </template>
