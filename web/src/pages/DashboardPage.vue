@@ -34,7 +34,7 @@
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Promedio ahorro 6m</div>
-          <div class="kpi-value usd">{{ hideNumbers ? '****' : 'USD 0' }}</div>
+          <div class="kpi-value usd">{{ hideNumbers ? '****' : 'U$S ' + summary.kpiPromedioAhorro6m.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</div>
         </div>
       </div>
 
@@ -97,6 +97,14 @@
               <td>Total gastos</td>
               <td v-for="m in summary.months" :key="m.id" :class="{ 'current-month': isCurrentMonth(m) }" style="text-align:right;">
                 {{ (fixedExpensesTotal(m.id) + variableExpensesTotal(m.id)) !== 0 ? (hideNumbers ? '****' : '-' + formatTotal(fixedExpensesTotal(m.id) + variableExpensesTotal(m.id))) : '—' }}
+              </td>
+            </tr>
+
+            <!-- Ahorro -->
+            <tr class="row-total-ingresos">
+              <td>Ahorro</td>
+              <td v-for="m in summary.months" :key="m.id" :class="{ 'current-month': isCurrentMonth(m) }" style="text-align:right;">
+                {{ hideNumbers ? '****' : formatTotal(summary.totalIngresos.find(t => t.monthId === m.id)?.total ?? 0) }}
               </td>
             </tr>
 
@@ -356,6 +364,12 @@ th.current-month {
 }
 .row-total-gastos td {
   background: #922b21;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+}
+.row-total-ingresos td {
+  background: #1e8449;
   color: white;
   font-weight: 700;
   font-size: 14px;

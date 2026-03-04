@@ -29,7 +29,9 @@
             <tr>
               <td style="font-weight:600;">{{ account.name }}</td>
               <td v-for="m in months" :key="m.id" style="text-align:right;">
-                {{ getBalance(account.id, m.id) }}
+                <template v-if="getSam(account.id, m.id) != null">{{ getBalance(account.id, m.id) }}</template>
+                <button v-else-if="m.id === latestMonthId" class="btn-small secondary" @click="openForm(account, m, true)">Definir</button>
+                <span v-else>—</span>
               </td>
             </tr>
             <!-- Ingresos row -->
@@ -83,9 +85,10 @@
           <button class="modal-close" @click="form.show = false">×</button>
         </div>
         <div class="form-group">
-          <label>Importe (USD)</label>
-          <input v-model.number="form.amount" type="number" min="0" step="0.01" />
+          <label>{{ form.isNew ? 'Balance inicial (USD)' : 'Importe (USD)' }}</label>
+          <input v-model.number="form.amount" type="number" :min="form.isNew ? undefined : 0" step="0.01" />
         </div>
+        <template v-if="!form.isNew">
         <div class="form-group">
           <label>Fecha</label>
           <input v-model="form.date" type="date" />
@@ -94,6 +97,7 @@
           <label>Descripción (opcional)</label>
           <input v-model="form.description" type="text" />
         </div>
+        </template>
         <div class="form-actions">
           <button class="secondary" @click="form.show = false">Cancelar</button>
           <button @click="submitTx">Guardar</button>
@@ -140,7 +144,7 @@ function fmtTotal(usdTotal, m) {
   return fmt(usdTotal)
 }
 
-const form = ref({ show: false, isIncome: true, accountName: '', samId: null, amount: null, date: new Date().toISOString().slice(0, 10), description: '' })
+const form = ref({ show: false, isIncome: true, isNew: false, accountName: '', samId: null, amount: null, date: new Date().toISOString().slice(0, 10), description: '' })
 
 function getSam(accountId, monthId) {
   return balances.value.find(b => b.savingAccountId === accountId && b.monthId === monthId)
@@ -179,21 +183,27 @@ function fmt(n) {
 async function openForm(account, month, isIncome) {
   let sam = getSam(account.id, month.id)
   if (!sam) {
-    await fetch(`${API}/api/saving-account-months?savingAccountId=${account.id}&monthId=${month.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ balance: 0 })
-    })
-    const res = await fetch(`${API}/api/saving-account-months?count=${count.value}`)
-    balances.value = await res.json()
-    sam = getSam(account.id, month.id)
-    if (!sam) return
+    form.value = { show: true, isIncome, isNew: true, accountName: account.name, samId: null, amount: null, date: new Date().toISOString().slice(0, 10), description: '', _account: account, _month: month }
+    return
   }
-  form.value = { show: true, isIncome, accountName: account.name, samId: sam.id, amount: null, date: new Date().toISOString().slice(0, 10), description: '' }
+  form.value = { show: true, isIncome, isNew: false, accountName: account.name, samId: sam.id, amount: null, date: new Date().toISOString().slice(0, 10), description: '' }
 }
 
 async function submitTx() {
-  if (!form.value.amount) return
+  if (form.value.amount === null || form.value.amount === '') return
+  let samId = form.value.samId
+  if (form.value.isNew) {
+    const balance = Number(form.value.amount)
+    await fetch(`${API}/api/saving-account-months?savingAccountId=${form.value._account.id}&monthId=${form.value._month.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ balance })
+    })
+    const res = await fetch(`${API}/api/saving-account-months?count=${count.value}`)
+    balances.value = await res.json()
+    form.value.show = false
+    return
+  }
   const amount = form.value.isIncome ? Math.abs(form.value.amount) : -Math.abs(form.value.amount)
   const res = await fetch(`${API}/api/saving-account-transactions?savingAccountMonthId=${form.value.samId}`, {
     method: 'POST',

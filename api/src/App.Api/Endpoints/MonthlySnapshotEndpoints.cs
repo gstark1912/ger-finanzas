@@ -79,7 +79,7 @@ public static class MonthlySnapshotEndpoints
                 .FirstOrDefaultAsync(m => m.Year == req.Year && m.MonthNumber == req.Month);
             if (month is null) return Results.NotFound(new { error = "Month not found" });
 
-            var summary = await DashboardCalculator.Calculate(db, [month], Currency.ARS);
+            var summary = await DashboardCalculator.Calculate(db, [month], Currency.USD);
             var fxRate = month.FxRate?.Rate ?? 0m;
 
             var snapshot = new MonthlySnapshot
@@ -111,6 +111,23 @@ public static class MonthlySnapshotEndpoints
             }
 
             await db.SaveChangesAsync();
+
+            // Carry forward saving account balances to next month
+            var savingMonths = await db.SavingAccountMonths
+                .Where(s => s.MonthId == month.Id)
+                .ToListAsync();
+            var nextMonthDb = await db.Months.FirstOrDefaultAsync(m => m.Year == nextYear && m.MonthNumber == nextMonth);
+            if (nextMonthDb != null)
+            {
+                foreach (var sam in savingMonths)
+                {
+                    var exists = await db.SavingAccountMonths.AnyAsync(s => s.SavingAccountId == sam.SavingAccountId && s.MonthId == nextMonthDb.Id);
+                    if (!exists)
+                        db.SavingAccountMonths.Add(new SavingAccountMonth { Id = Guid.NewGuid(), SavingAccountId = sam.SavingAccountId, MonthId = nextMonthDb.Id, Balance = sam.Balance });
+                }
+                await db.SaveChangesAsync();
+            }
+
             return Results.Ok(new { snapshot.Year, snapshot.MonthNumber, snapshot.ClosedAt });
         });
     }

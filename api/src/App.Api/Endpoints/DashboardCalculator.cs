@@ -91,6 +91,10 @@ public static class DashboardCalculator
             .Where(s => monthIds.Contains(s.MonthId))
             .ToListAsync();
 
+        var savingTransactions = await db.SavingAccountMonthTransactions
+            .Where(t => savingAccountMonths.Select(s => s.Id).Contains(t.SavingAccountMonthId))
+            .ToListAsync();
+
         var savings = savingAccountMonths
             .GroupBy(s => s.SavingAccount)
             .Select(accountGroup =>
@@ -157,12 +161,46 @@ public static class DashboardCalculator
         var prevMonth = orderedMonths.Count > 1 ? orderedMonths[^2] : null;
         var kpiPatrimonioUsdDelta = prevMonth is not null ? PatrimonioUsd(lastMonth) - PatrimonioUsd(prevMonth) : 0m;
 
+        // Total ingresos por mes: saving transactions (positivas) + investment income, minus saving expenses + investment expenses
+        var totalIngresos = months.Select(m =>
+        {
+            var rate = m.FxRate?.Rate ?? 1m;
+            var samIds = savingAccountMonths.Where(s => s.MonthId == m.Id).Select(s => s.Id).ToHashSet();
+            var savingIncome = savingTransactions
+                .Where(t => samIds.Contains(t.SavingAccountMonthId) && t.Amount > 0)
+                .Sum(t => t.Amount);
+            var savingExpenses = savingTransactions
+                .Where(t => samIds.Contains(t.SavingAccountMonthId) && t.Amount < 0)
+                .Sum(t => t.Amount);
+            // SavingAccount is always USD
+            var savingNet = Convert(savingIncome + savingExpenses, Currency.USD, targetCurrency, rate);
+
+            var invNet = investmentMonths
+                .Where(i => i.Month == m.MonthNumber && i.Year == m.Year)
+                .Sum(i => Convert(i.Income - i.Expenses, i.InvestmentAccount.Currency, targetCurrency, rate));
+
+            return new MonthTotal(m.Id, m.Year, m.MonthNumber, savingNet + invNet);
+        }).ToList();
+
         var monthHeaders = months
             .OrderBy(m => m.Year).ThenBy(m => m.MonthNumber)
             .Select(m => new MonthWithFxRateDto(m.Id, m.Year, m.MonthNumber, m.FxRate?.Rate))
             .ToList();
 
-        return new DashboardSummaryDto(monthHeaders, fixedExpenses, savings, variableExpenses, investments, kpiArs, kpiUsd, kpiPatrimonioUsdDelta);
+        // Promedio ahorro 6m: average of totalIngresos (in USD) for up to last 6 months
+        var savingsInUsd = totalIngresos
+            .OrderByDescending(t => t.Year * 100 + t.MonthNumber)
+            .Take(6)
+            .Select(t =>
+            {
+                var m = months.FirstOrDefault(x => x.Id == t.MonthId);
+                var rate = m?.FxRate?.Rate ?? 1m;
+                return targetCurrency == Currency.USD ? t.Total : (rate > 0 ? t.Total / rate : 0m);
+            })
+            .ToList();
+        var kpiPromedioAhorro6m = savingsInUsd.Count > 0 ? savingsInUsd.Average() : 0m;
+
+        return new DashboardSummaryDto(monthHeaders, fixedExpenses, savings, variableExpenses, investments, kpiArs, kpiUsd, kpiPatrimonioUsdDelta, totalIngresos, kpiPromedioAhorro6m);
     }
 
     private static decimal Convert(decimal amount, Currency from, Currency to, decimal rate)

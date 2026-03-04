@@ -87,13 +87,24 @@ public static class ExpenseAccountEndpoints
         group.MapDelete("/{id:guid}", async (Guid id, AppDbContext db) =>
         {
             var account = await db.ExpenseAccounts.FindAsync(id);
-            if (account is null)
-                return Results.NotFound();
+            if (account is null) return Results.NotFound();
 
-            account.IsActive = false;
-            account.UpdatedAt = DateTime.UtcNow;
+            // Delete all related data
+            var fixedDefs = await db.FixedExpenseDefinitions.Where(d => d.ExpenseAccountId == id).Select(d => d.Id).ToListAsync();
+            var fixedEntries = await db.FixedExpenseMonthEntries.Where(e => fixedDefs.Contains(e.FixedExpenseDefinitionId)).ToListAsync();
+            db.FixedExpenseMonthEntries.RemoveRange(fixedEntries);
+            db.FixedExpenseDefinitions.RemoveRange(await db.FixedExpenseDefinitions.Where(d => d.ExpenseAccountId == id).ToListAsync());
+
+            var installments = await db.CardInstallments.Where(c => c.ExpenseAccountId == id).Select(c => c.Id).ToListAsync();
+            var cardExpenseMonths = await db.CardExpenseMonths.Where(e => installments.Contains(e.CardInstallmentId)).ToListAsync();
+            db.CardExpenseMonths.RemoveRange(cardExpenseMonths);
+            db.CardInstallments.RemoveRange(await db.CardInstallments.Where(c => c.ExpenseAccountId == id).ToListAsync());
+            db.CardBalanceMonths.RemoveRange(await db.CardBalanceMonths.Where(b => b.ExpenseAccountId == id).ToListAsync());
+
+            db.VariableExpenses.RemoveRange(await db.VariableExpenses.Where(v => v.ExpenseAccountId == id).ToListAsync());
+
+            db.ExpenseAccounts.Remove(account);
             await db.SaveChangesAsync();
-
             return Results.NoContent();
         });
     }

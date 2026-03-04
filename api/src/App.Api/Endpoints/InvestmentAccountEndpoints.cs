@@ -47,8 +47,9 @@ public static class InvestmentAccountEndpoints
         {
             var account = await db.InvestmentAccounts.FindAsync(id);
             if (account is null) return Results.NotFound();
-            account.IsActive = false;
-            account.UpdatedAt = DateTime.UtcNow;
+
+            db.InvestmentAccountMonths.RemoveRange(await db.InvestmentAccountMonths.Where(m => m.InvestmentAccountId == id).ToListAsync());
+            db.InvestmentAccounts.Remove(account);
             await db.SaveChangesAsync();
             return Results.NoContent();
         });

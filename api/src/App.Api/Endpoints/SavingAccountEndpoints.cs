@@ -49,8 +49,11 @@ public static class SavingAccountEndpoints
         {
             var account = await db.SavingAccounts.FindAsync(id);
             if (account is null) return Results.NotFound();
-            account.IsActive = false;
-            account.UpdatedAt = DateTime.UtcNow;
+
+            var samIds = await db.SavingAccountMonths.Where(s => s.SavingAccountId == id).Select(s => s.Id).ToListAsync();
+            db.SavingAccountMonthTransactions.RemoveRange(await db.SavingAccountMonthTransactions.Where(t => samIds.Contains(t.SavingAccountMonthId)).ToListAsync());
+            db.SavingAccountMonths.RemoveRange(await db.SavingAccountMonths.Where(s => s.SavingAccountId == id).ToListAsync());
+            db.SavingAccounts.Remove(account);
             await db.SaveChangesAsync();
             return Results.NoContent();
         });
