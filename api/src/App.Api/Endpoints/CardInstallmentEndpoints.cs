@@ -47,12 +47,14 @@ public static class CardInstallmentEndpoints
                 .OrderBy(a => a.Name)
                 .ToListAsync();
 
-            var monthKeys = allMonths.Select(m => m.Year * 100 + m.Month).ToList();
+            var visibleMonthKeys = allMonths.Select(m => m.Year * 100 + m.Month).ToHashSet();
 
-            var installments = await db.CardInstallments
+            var installments = (await db.CardInstallments
                 .Include(c => c.CardExpenseMonths)
                 .Where(c => c.Active)
-                .ToListAsync();
+                .ToListAsync())
+                .Where(c => c.CardExpenseMonths.Any(e => visibleMonthKeys.Contains(e.Year * 100 + e.Month)))
+                .ToList();
 
             var balances = await db.CardBalanceMonths
                 .Where(b => ccAccounts.Select(a => a.Id).Contains(b.ExpenseAccountId))
